@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PaedsMe Prototype</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand"><span class="logo">Paeds<span>Me</span></span><span class="pill">Dev prototype</span><span class="demo">Synthetic data · demo date 12 Nov 2026</span></div>
+  <nav class="tabs" aria-label="Screens">
+    <a href="#family">Family app</a><a href="#find-care">Find care</a><a href="#gp-referral">GP referral</a><a href="#diagnostics">Diagnostics hub</a><a href="#clinic">Clinic tools</a>
+  </nav>
+</div></header>
+<main class="wrap" id="view"></main>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<nav class="fnav" id="fnav" aria-label="Family app sections" hidden></nav>
+<button class="pip-fab" id="pip-open" type="button" aria-haspopup="dialog" aria-label="Ask Pip"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="36" rx="14" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><path d="M13 18h6l2-4 3 7 2-3h9" fill="none" stroke="var(--sun)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="29" r="2.6" fill="var(--ink)"/><circle cx="30" cy="29" r="2.6" fill="var(--ink)"/><path d="M19 35q5 4 10 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/></svg><span>Ask Pip</span></button>
+<section class="pip" id="pip" role="dialog" aria-label="Pip, the PaedsMe support assistant" hidden>
+  <div class="pip-head"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="36" rx="14" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><path d="M13 18h6l2-4 3 7 2-3h9" fill="none" stroke="var(--sun)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="29" r="2.6" fill="var(--ink)"/><circle cx="30" cy="29" r="2.6" fill="var(--ink)"/><path d="M19 35q5 4 10 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/></svg><div class="who"><b>Pip</b> <span class="chip quiet" id="pip-mode">Scripted demo</span><div class="sub" id="pip-role"></div></div>
+    <button type="button" id="pip-voice" aria-pressed="false" hidden>Read aloud</button><button type="button" id="pip-close">Close</button></div>
+  <div class="pip-log" id="pip-log" aria-live="polite"></div>
+  <div class="pip-chips" id="pip-chips"></div>
+  <form class="pip-form" id="pip-form"><input type="text" id="pip-input" placeholder="Ask about bookings, referrals, tests" maxlength="300" autocomplete="off" aria-label="Message Pip"><button class="primary" type="submit" id="pip-send">Send</button><button type="button" id="pip-stop" hidden>Stop</button></form>
+  <p class="pip-note">Pip is an AI assistant for bookings and admin. It cannot give medical advice. In an emergency call 000.</p>
+</section>
+<script src="app.js"></script>
+</body>
+</html>
