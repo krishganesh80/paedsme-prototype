@@ -110,7 +110,7 @@ const NUMW=['zero','one','two','three','four','five','six','seven','eight','nine
 const CONCERN_RX={behaviour:/adhd|attention|focus|hyperactiv|behaviou?r|concentrat|impulsiv|fidget/,development:/speech|talk|develop|autis|milestone/,seizures:/seizure|blank stare|staring|blackout|epilep|funny turn/,sleep:/sleep|bedtime|waking at night/,heart:/heart|faint|palpitation/,growth:/growth|weight|feeding|eating|breastfe|height/,headache:/headache|migraine/};
 const CULT_RX=[[/aboriginal|torres strait|indigenous|first nations/,0],[/south asian|indian|sri lankan|pakistani|bangladeshi|nepal/,1],[/east asian|south-east asian|southeast asian|chinese|korean|filipino|japanese/,2],[/african|nigerian|sudanese|somali|ethiopian/,3],[/pasifika|pacific island|samoan|tongan|fijian|m[aā]ori/,4],[/rural|farm|cattle station|on a property/,5],[/refugee|newly arrived|new to australia|migrant/,6]];
 function hear(text){
-  const q=state.q,h=[];q.said=String(text).slice(0,400);
+  const q=state.q,h=[];q.said=String(text).slice(0,400);Object.assign(q,{lang:'Any',lived:false,culture:'Any'});
   const t=' '+q.said.toLowerCase().replace(/\b[a-z]+\b/g,w=>NUMW.includes(w)?NUMW.indexOf(w):w)+' ';
   if(!t.trim()){toast('Say or type a sentence about your child first');return;}
   if(EMERG.test(t)){q.heard=[];toast('If a child is in danger, call 000 now.');return;}
@@ -128,6 +128,7 @@ function hear(text){
   q.heard=h;
   toast(h.length?'Filled in '+plural(h.length,'detail')+'. Check them below.':'Could not pick anything up. Use the form below.');
 }
+const toResults=()=>{const r=document.getElementById('results');if(r&&state.q.heard.length)r.scrollIntoView({behavior:window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});};
 let rec=null;
 function listen(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -136,7 +137,7 @@ function listen(){
   const q=state.q;rec=new SR();rec.lang='en-AU';rec.interimResults=true;rec.continuous=false;let got='';
   rec.onresult=e=>{got=[...e.results].map(r=>r[0].transcript).join(' ');const box=document.getElementById('q-said');if(box)box.value=got;};
   rec.onerror=e=>{toast(e.error==='not-allowed'||e.error==='service-not-allowed'?'The microphone is blocked. Type it instead.':'Could not hear that. Try again, or type it.');};
-  rec.onend=()=>{rec=null;q.listening=false;if(got.trim())hear(got);render();};
+  rec.onend=()=>{rec=null;q.listening=false;if(got.trim())hear(got);render();if(got.trim())toResults();};
   try{rec.start();q.listening=true;render();}catch(e){rec=null;q.listening=false;toast('Voice did not start. Type it instead.');}
 }
 
@@ -185,7 +186,7 @@ function journey(id){
 const CATS=['Talking','Moving','Sleep','Behaviour','Funny turn','Eating'];
 function record(id){const n=state.notes[id],first=n.length?n.map(x=>x.date).sort()[0]:TODAY;
   return{n,w:state.wins[id],q:state.questions[id],weeks:Math.max(1,Math.ceil(days(TODAY,first)/7)),vids:n.filter(x=>x.video).length};}
-const plural=(n,w)=>n+' '+w+(n===1?'':/ch$/.test(w)?'es':'s');
+const plural=(n,w)=>n+' '+(n===1?w:/[^aeiou]y$/.test(w)?w.slice(0,-1)+'ies':w+(/ch$/.test(w)?'es':'s'));
 
 const TINFO={
   eeg:{name:'Brain wave test',clin:'EEG',what:'Small stickers on the head record brain waves.',feel:'It does not hurt. No needles.',time:'About an hour at the clinic.'},
@@ -341,6 +342,18 @@ function family(){
   return `<div class="app">${head}${body}</div>`;
 }
 
+/* ---------- Website format (16 Nov 2026). Every screen except the Family app is laid out as a web page:
+   a band (the hero) on the aqua ground, wide sections, and the site footer. The Family app keeps its
+   phone layout. Bands animate in once per route change, never on a re-render. ---------- */
+const TICK='<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ARROW='<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SPARK='<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c.6 5.2 2.8 7.4 8 8-5.2.6-7.4 2.8-8 8-.6-5.2-2.8-7.4-8-8 5.2-.6 7.4-2.8 8-8z" fill="currentColor"/></svg>';
+const sparks=SPARK+SPARK+SPARK;
+const TINT=['accent','orange','violet','sun','lime'];
+const ini=n=>n.replace(/^Dr /,'').split(' ').map(w=>w[0]).join('').slice(0,2);
+const secHead=(kick,h2,p)=>`<div class="sec-head"><span class="kick">${kick}</span><h2>${h2}</h2>${p?`<p>${p}</p>`:''}</div>`;
+const kpi=(lab,n,sub)=>`<div class="kpi"><span class="lab">${lab}</span><b>${n}</b>${sub?`<small>${sub}</small>`:''}</div>`;
+const SAY=[['ADHD, age 7, Brisbane','My daughter is 7 and we think it might be ADHD. We live in Brisbane and speak Vietnamese at home.'],['Blank stares, age 4','Our 4 year old has blank stares. We are on the Gold Coast and want to see someone in person.'],['A teen who wants lived experience','He is 15 and has ADHD. We want a doctor with lived experience, on the Gold Coast. Video is fine.']];
 function findCare(){
   const q=state.q, m=match(q), B=q.age<17?0:q.age<25?1:2;
   const hints=[];
@@ -354,39 +367,65 @@ function findCare(){
   if(m.length&&q.lang!=='Any'&&!m.some(x=>x.c.langs.includes(q.lang)))miss.push('speaks '+q.lang);
   if(m.length&&q.culture!=='Any'&&!m.some(x=>x.c.works.includes(q.culture)))miss.push('lists '+q.culture);
   if(miss.length)hints.push('None of these matches '+miss.join(' or ')+'. A navigator can search outside the network.');
-  return `<div class="head"><h1>Find the right clinician</h1><p>Tell us about your child, in your own words or with the form. We match on what the clinician treats, where they are, how soon they can see you, and what matters to your family.</p></div>
-  <div class="cols" style="grid-template-columns:minmax(0,2fr) minmax(0,3fr)">
-   <form class="panel" id="find-form">
-    <div class="field"><label for="q-said">In your own words</label><textarea id="q-said" maxlength="400" placeholder="My daughter is 7 and we think it might be ADHD. We live in Brisbane and speak Vietnamese at home.">${esc(q.said)}</textarea></div>
-    <div class="row" style="justify-content:flex-start"><button type="button" class="primary" data-act="hear">Fill in for me</button><button type="button" class="mic" data-act="listen" aria-pressed="${!!q.listening}">${I.mic}<span>${q.listening?'Listening. Tap to stop':'Speak'}</span></button></div>
-    ${q.heard.length?`<div class="heard"><span class="sub">We picked up:</span>${q.heard.map(x=>`<span class="chip good">${esc(x)}</span>`).join('')}</div>`:''}
+  const sum=['Age '+q.age,label(q.concern),q.region];if(q.lang!=='Any')sum.push(q.lang);if(q.culture!=='Any')sum.push(q.culture);if(q.lived)sum.push('Lived experience');
+  return `<section class="band band-c"><div class="wrap"><div class="band-text">
+    <span class="eyebrow">Find care</span>
+    <h1>The right clinician for your child, <em>in your own words</em></h1>
+    <p class="lead">Tell us what is going on. We match on what the clinician treats, where they are, how soon they can see you, and what matters to your family.</p>
+    <div class="ask"><label class="sr" for="q-said">Tell us about your child</label>
+     <textarea id="q-said" rows="3" maxlength="400" placeholder="${SAY[0][1]}">${esc(q.said)}</textarea>
+     <div class="ask-bar"><button type="button" class="mic" data-act="listen" aria-pressed="${!!q.listening}">${I.mic}<span>${q.listening?'Listening. Tap to stop':'Speak'}</span></button><button type="button" class="primary cta" data-act="hear">Find matches ${ARROW}</button></div></div>
+    ${q.heard.length?`<div class="heard"><span>We picked up</span>${q.heard.map(x=>`<span class="chip good">${esc(x)}</span>`).join('')}</div>`
+     :`<div class="examples"><span>Try</span>${SAY.map((s,i)=>`<button type="button" class="ex" data-act="say" data-i="${i}">${s[0]}</button>`).join('')}</div>`}
+    <ul class="trust"><li>${TICK}Ranked on clinical fit, location and wait</li><li>${TICK}Clinicians cannot pay to rank higher</li><li>${TICK}Video or in person</li></ul>
+   </div></div>${sparks}</section>
+  <section class="sec" id="results"><div class="wrap duo">
+   <form class="filter" id="find-form" aria-label="Refine the search"><h2>Refine</h2>
     <div class="two"><div class="field"><label for="q-age">Age</label><input type="number" id="q-age" min="0" max="30" value="${q.age}"></div>
     <div class="field"><label for="q-region">Where you live</label><select id="q-region">${opts(REGIONS,q.region)}</select></div></div>
     <div class="field"><label for="q-concern">Main concern</label><select id="q-concern">${opts(CONCERNS,q.concern)}</select></div>
-    <div class="two"><div class="field"><label for="q-lang">Language</label><select id="q-lang">${opts([['Any','Any language'],...LANGS],q.lang)}</select></div>
-    <div class="field"><label for="q-culture">Cultural fit</label><select id="q-culture">${opts([['Any','No preference'],...CULT],q.culture)}</select></div></div>
+    <div class="field"><label for="q-lang">Language</label><select id="q-lang">${opts([['Any','Any language'],...LANGS],q.lang)}</select></div>
+    <div class="field"><label for="q-culture">Cultural fit</label><select id="q-culture">${opts([['Any','No preference'],...CULT],q.culture)}</select></div>
     <label class="check"><input type="checkbox" id="q-lived"${q.lived?' checked':''}><span>A clinician with lived experience</span></label>
     <label class="check"><input type="checkbox" id="q-tele"${q.tele?' checked':''}><span>Video consults are fine</span></label>
     <label class="check"><input type="checkbox" id="q-ref"${q.ref?' checked':''}><span>We already have a GP referral</span></label>
-    ${hints.map(h=>`<p class="note">${esc(h)}</p>`).join('')}
    </form>
-   <section class="panel"><div class="row"><h2>${plural(m.length,'match')}</h2><span class="sub">Booking adds to ${state.kids[state.child].name}'s appointments</span></div>
-    ${m.length?`<ul class="list">${m.map(({c,why})=>{const p=fees(c,q);return `<li><div class="txt"><b>${esc(c.name)}</b> <span class="sub">${esc(c.role)} · ${esc(c.region)}</span>
-      <div class="sub">${why.map(esc).join(' · ')}</div>
-      <div class="sub">${p.adhd?'ADHD assessment, first visit about $'+p.fee:'First visit $'+p.fee}, about $${p.gap} out of pocket after the rebate${c.tele?' · video available':''}</div></div>
-      <button class="primary" data-act="book" data-name="${esc(c.name)}"${state.booked[c.name]?' disabled':''}>${state.booked[c.name]?'Booked':'Book'}</button></li>`;}).join('')}</ul>`
-     :`<p>No clinician in the network fits yet. Allow video consults, or a navigator can search outside the network.</p>`}
-    ${q.concern==='behaviour'?'<p class="sub"><a href="#adhd-care">How ADHD care works, and what it costs</a></p>':''}
-    <p class="note">While you wait, add notes in the Family app. The doctor reads them before the visit.</p>
-    <p class="foot">Ranked on clinical fit, location, wait and what matters to your family. Clinicians cannot pay to rank higher.</p></section></div>`;
+   <div class="res">
+    <div class="res-head"><h2>${plural(m.length,'match')}</h2><p class="sub">${sum.map(esc).join(' · ')}</p></div>
+    ${hints.map(h=>`<p class="callout">${esc(h)}</p>`).join('')}
+    ${m.length?`<ol class="docs">${m.map(({c,why},i)=>{const p=fees(c,q);return `<li class="doc${i===0?' top':''}" style="--s:var(--${TINT[i%5]}-soft)">
+      <span class="ava2" aria-hidden="true">${ini(c.name)}</span>
+      <div class="doc-main">${i===0?'<span class="tag">Top match</span>':''}<h3>${esc(c.name)}</h3><p class="sub">${esc(c.role)} · ${esc(c.region)}${c.tele?' · video available':''}</p>
+       <ul class="why">${why.filter(w=>!/^About \d+ days/.test(w)).map(w=>`<li>${TICK}${esc(w)}</li>`).join('')}</ul></div>
+      <div class="doc-side"><div class="wait"><b>${c.wait}</b><span>days to a first visit</span></div>
+       <p class="price">${p.adhd?'ADHD assessment visit, about $'+p.fee:'First visit $'+p.fee}<span>about $${p.gap} out of pocket after the rebate</span></p>
+       <button class="primary" data-act="book" data-name="${esc(c.name)}"${state.booked[c.name]?' disabled':''}>${state.booked[c.name]?'Booked':'Book'}</button></div></li>`;}).join('')}</ol>`
+     :`<div class="empty"><h3>No clinician in the network fits yet</h3><p>Allow video consults, or a navigator can search outside the network.</p></div>`}
+    ${q.concern==='behaviour'?`<a class="linkcard" href="#adhd-care"><span><b>How ADHD care works, and what it costs</b><span class="sub">Three steps, shared between a specialist and your GP</span></span>${ARROW}</a>`:''}
+    <p class="foot">Ranked on clinical fit, location, wait and what matters to your family. Clinicians cannot pay to rank higher. Booking adds to ${state.kids[state.child].name}'s appointments.</p>
+   </div></div></section>
+  <section class="sec alt"><div class="wrap">${secHead('How matching works','From a sentence to a booked visit')}
+   <div class="grid3">
+    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>Tell us</h3><p>Type or say a sentence about your child, or use the form. You can change anything we pick up.</p></div>
+    <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>We rank</h3><p>On clinical fit, location, wait and what matters to your family. Clinicians cannot pay to rank higher.</p></div>
+    <div class="feat" style="--s:var(--violet-soft)"><span class="num">3</span><h3>You book</h3><p>The visit goes into the Family app. While you wait, add notes. The doctor reads them before the visit.</p></div>
+   </div>
+   <div class="cta-row center"><a class="btn primary cta" href="#family">Open the Family app ${ARROW}</a></div></div></section>`;
 }
 
 const dxSite=r=>r==='Gold Coast'?'Hub, Southport':r==='Regional or remote'?'Home kit, posted to the family':'Spoke, '+r;
 function gpView(){
-  const g=state.gp, m=match({age:g.age,concern:g.concern,region:g.region,tele:g.tele}).slice(0,3);
-  return `<div class="head"><h1>Refer a child</h1><p>Send an open paediatric referral. PaedsMe matches the family, books them and sends the letter back to you.</p></div>
-  <div class="cols">
-   <form class="panel" id="gp-form">
+  const g=state.gp, m=match({age:g.age,concern:g.concern,region:g.region,tele:g.tele}).slice(0,3), dx=g.need!=='consult';
+  const RAIL=['PaedsMe has your open referral.','Matched on clinical fit, location and wait.','The family chooses and books. You are told who with.','The paediatrician reads the family\'s notes first.','The letter comes back to you.'];
+  return `<section class="band"><div class="wrap band-2"><div class="band-text">
+    <span class="eyebrow">For GPs</span>
+    <h1>One open referral. We match, book and <em>write back</em></h1>
+    <p class="lead">Send an open paediatric referral. PaedsMe matches the family, books them and sends the letter back to you.</p>
+    <ul class="ticks"><li>${TICK}<span>Addressed "Dear Paediatrician". A referral to a private specialist does not need to name the doctor.</span></li>
+     <li>${TICK}<span>The family chooses. You are told who they booked with.</span></li>
+     <li>${TICK}<span>Urgent referrals are phoned through to the clinician the same day.</span></li></ul>
+   </div>
+   <div class="band-side"><form class="formcard" id="gp-form"><h2>Refer a child</h2>
     <div class="two"><div class="field"><label for="g-age">Patient age</label><input type="number" id="g-age" min="0" max="18" value="${g.age}"></div>
     <div class="field"><label for="g-region">Patient region</label><select id="g-region">${opts(REGIONS,g.region)}</select></div></div>
     <div class="field"><label for="g-need">What do you need?</label><select id="g-need">${opts([['consult','A paediatrician visit'],['eeg','Brain wave test (EEG)'],['ecg','Heart trace (ECG)']],g.need)}</select></div>
@@ -394,16 +433,24 @@ function gpView(){
     <div class="two"><div class="field"><label for="g-urgency">Urgency</label><select id="g-urgency">${opts(['Routine','Soon','Urgent'],g.urgency)}</select></div>
     <div class="field"><label for="g-period">Referral period</label><select id="g-period">${opts(['12 months','Indefinite'],g.period)}</select></div></div>
     <label class="check"><input type="checkbox" id="g-tele"${g.tele?' checked':''}><span>Family accepts video consults</span></label>
-    <p class="note">Addressed "Dear Paediatrician". A referral to a private specialist does not need to name the doctor.${g.urgency==='Urgent'?' Urgent referrals are phoned through to the clinician the same day.':''}</p>
-    <div><button class="primary" type="submit">Send open referral</button></div>
-   </form>
-   <section class="panel"><h2>${g.need==='consult'?'Likely matches':'Where it can be done'}</h2>
-    ${g.need!=='consult'?`<ul class="list"><li><div class="txt"><b>PaedsMe Diagnostics</b><div class="sub">${esc(dxSite(g.region))} · report to you within 5 working days</div></div><span class="chip">${g.need==='eeg'?'Neurology':'Cardiology'}</span></li></ul>${g.need==='eeg'&&g.concern==='seizures'?'<p class="note">For a first blackout, a heart trace is usually added. The hub will check.</p>':''}`:m.length?`<ul class="list">${m.map(({c})=>`<li><div class="txt"><b>${esc(c.name)}</b><div class="sub">${esc(c.role)} · ${esc(c.region)}</div></div><span class="chip">${c.wait} days</span></li>`).join('')}</ul>`:'<p>No network match. A navigator will search further and call your rooms.</p>'}
-    <p class="foot">The family chooses. You are told who they booked with.</p></section></div>
-  ${sharedPanel()}
-  <section class="panel"><h2>Your referrals</h2><ul class="list">${state.refs.map((r,i)=>`<li><div class="txt"><b>${r.id}</b> <span class="sub">Child, ${r.age} y · ${esc(label(r.concern))} · ${r.urgency}</span><div class="sub">${r.step>=2?'Booked with '+esc(r.to):'Matching in progress'}</div></div>
-    <ol class="steps">${STEPS.map((s,j)=>`<li class="${j<=r.step?'done':''}">${s}</li>`).join('')}</ol>
-    <button data-act="ref-next" data-i="${i}"${r.step>=4?' disabled':''}>${r.step>=4?'Complete':'Advance (demo)'}</button></li>`).join('')}</ul></section>`;
+    ${g.urgency==='Urgent'?'<p class="note">Urgent referrals are phoned through to the clinician the same day.</p>':''}
+    <button class="primary cta" type="submit">Send open referral ${ARROW}</button>
+    <div class="likely"><span class="lab">${dx?'Where it can be done':'Likely matches'}</span>
+     ${dx?`<ul class="list"><li><div class="txt"><b>PaedsMe Diagnostics</b><div class="sub">${esc(dxSite(g.region))} · report to you within 5 working days</div></div><span class="chip">${g.need==='eeg'?'Neurology':'Cardiology'}</span></li></ul>${g.need==='eeg'&&g.concern==='seizures'?'<p class="note">For a first blackout, a heart trace is usually added. The hub will check.</p>':''}`
+      :m.length?`<ul class="list">${m.map(({c})=>`<li><div class="txt"><b>${esc(c.name)}</b><div class="sub">${esc(c.role)} · ${esc(c.region)}</div></div><span class="chip">${c.wait} days</span></li>`).join('')}</ul>`:'<p class="sub">No network match. A navigator will search further and call your rooms.</p>'}
+     <p class="foot">The family chooses. You are told who they booked with.</p></div>
+   </form></div></div>${sparks}</section>
+  <section class="sec alt"><div class="wrap">${secHead('After you send it','Where your referral goes')}
+   <ol class="rail">${STEPS.map((s,i)=>`<li><span class="dot">${i+1}</span><b>${s}</b><p>${RAIL[i]}</p></li>`).join('')}</ol></div></section>
+  <section class="sec"><div class="wrap">${secHead('Shared care with you','Children with ADHD who come back to you','The paediatrician\'s plan says what to check and when, and they review once a year. Draft model from the clinical lead. State prescribing rules still apply.')}
+   <ul class="rows">${state.shared.map((s,i)=>{const od=days(s.gpDue)<0;return `<li class="rowcard"><span class="ava2" style="--s:var(--${TINT[i%5]}-soft)" aria-hidden="true">${s.c.replace(/\D/g,'')}</span>
+     <div class="txt"><h3>${s.c} <span class="sub">${esc(s.g)}</span></h3><p class="sub">Plan by ${esc(s.paed)}${s.complex?' · more specialist visits':''}</p>
+      <ul class="why"><li class="${od?'late':''}">${od?'Your review is overdue by '+(-days(s.gpDue))+' days':'Your review is due '+fmt(s.gpDue).slice(4,-5)}</li><li>Repeat script due ${fmt(s.script).slice(4,-5)}</li><li>Yearly review ${fmt(s.annual).slice(4)}</li></ul></div>
+     <div class="acts"><button type="button" class="primary" data-act="sc-done" data-i="${i}">Review done</button><button type="button" data-act="sc-esc" data-i="${i}"${s.asked?' disabled':''}>${s.asked?'Video review asked for':'Ask for a video review'}</button></div></li>`;}).join('')}</ul></div></section>
+  <section class="sec alt"><div class="wrap">${secHead('Your referrals','Every referral, and where it is up to')}
+   <ul class="rows">${state.refs.map((r,i)=>`<li class="rowcard"><div class="txt"><h3>${r.id} <span class="sub">Child, ${r.age} y · ${esc(label(r.concern))} · ${r.urgency}</span></h3><p class="sub">${r.step>=2?'Booked with '+esc(r.to):'Matching in progress'}</p>
+      <ol class="steps">${STEPS.map((s,j)=>`<li class="${j<=r.step?'done':''}">${s}</li>`).join('')}</ol></div>
+     <div class="acts"><button data-act="ref-next" data-i="${i}"${r.step>=4?' disabled':''}>${r.step>=4?'Complete':'Advance (demo)'}</button></div></li>`).join('')}</ul></div></section>`;
 }
 
 function tmpl(t,f){const n=t.kid?state.kids[t.kid].name+"'s":"Your child's",nm=TINFO[t.type].name.toLowerCase();
@@ -429,22 +476,29 @@ function studyDetail(t){
 function hub(){
   const L=state.hubLine,st=state.studies.filter(x=>L==='All'||x.line===L),sel=state.studies.find(x=>x.id===state.hubSel);
   const open=st.filter(x=>x.s<6).length,rep=st.filter(x=>x.s===4||x.s===5).length,kits=st.filter(x=>x.site.startsWith('Home')&&x.s>=2&&x.s<5).length,done=st.filter(x=>x.s===6).length;
-  return `<div class="row"><div class="head"><h1>Electrophysiology hub</h1><p>Brain and heart tests for children, from request to result. Recorded at a clinic or at home. Reported by specialists.</p><p class="sub">Two modules: <b>NeuroMe</b> for brain wave tests, <b>CardiMe</b> for heart traces.</p></div>
-    <div class="seg" role="group" aria-label="Service">${['All','Neurology','Cardiology'].map(x=>`<button type="button" data-act="hub-line" data-l="${x}" aria-pressed="${x===L}">${x}</button>`).join('')}</div></div>
-  <div class="tiles"><div class="tile"><span class="lab">Open</span><b>${open}</b></div><div class="tile"><span class="lab">To report</span><b>${rep}</b></div><div class="tile"><span class="lab">Home kits out</span><b>${kits}</b></div><div class="tile"><span class="lab">Reported</span><b>${done}</b></div></div>
-  ${sel?studyDetail(sel):''}
-  <section class="panel"><h2>Worklist</h2><div class="scroll"><table><thead><tr><th>Study</th><th>Patient</th><th>Test</th><th>Where</th><th>Waiting</th><th>Status</th><th></th></tr></thead><tbody>
-   ${st.map(x=>`<tr><td><b>${x.id}</b></td><td>Child, ${x.age} y${x.kid?' <span class="chip">App</span>':''}</td><td>${esc(x.test)}<div class="sub">${esc(x.ind)}</div>${x.s===0&&(x.flag||(x.needEcg&&!x.ecgAdded))?'<span class="chip crit">Needs triage</span>':''}</td><td>${esc(x.site)}</td><td>${days(TODAY,x.ref)} days</td>
-    <td><span class="chip ${x.s===6?'good':x.s>=4?'warn':''}">${FLOW[x.s]}</span></td><td><button type="button" data-act="hub-open" data-id="${x.id}">${x.s===5?'Report':'Open'}</button></td></tr>`).join('')}
-  </tbody></table></div></section>
-  <section class="panel"><div class="row"><h2>Service standards</h2><span class="chip quiet">Draft, for the clinical lead to set</span></div><ul class="plain">
+  const cnt=l=>state.studies.filter(x=>x.line===l&&x.s<6).length;
+  const mod=(l,name,what,ico,tint)=>`<button type="button" class="mod" data-act="hub-line" data-l="${L===l?'All':l}" aria-pressed="${L===l}"><span class="ti" style="--s:var(--${tint}-soft)" aria-hidden="true">${ico}</span><span class="txt"><b>${name}</b><span class="sub">${what} · ${cnt(l)} open</span></span></button>`;
+  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text">
+     <span class="eyebrow">Diagnostics hub</span><h1>Electrophysiology hub</h1>
+     <p class="lead">Brain and heart tests for children, from request to result. Recorded at a clinic or at home. Reported by specialists.</p></div>
+    <div class="seg" role="group" aria-label="Service">${['All','Neurology','Cardiology'].map(x=>`<button type="button" data-act="hub-line" data-l="${x}" aria-pressed="${x===L}">${x}</button>`).join('')}</div></div></div>${sparks}</section>
+  <section class="dash"><div class="wrap stack">
+   <div class="kpis">${kpi('Open',open,'studies in progress')}${kpi('To report',rep,'recorded, waiting on a specialist')}${kpi('Home kits out',kits,'posted to families')}${kpi('Reported',done,'released to family and referrer')}</div>
+   <div class="mods">${mod('Neurology','NeuroMe','Brain wave tests (EEG)',I.pulse,'violet')}${mod('Cardiology','CardiMe','Heart traces (ECG and Holter)',I.pulse,'orange')}</div>
+   ${sel?studyDetail(sel):''}
+   <section class="panel"><div class="row"><h2>Worklist</h2><span class="sub">${plural(st.length,'study')}${L==='All'?'':' in '+L.toLowerCase()}</span></div><div class="scroll"><table class="tbl"><thead><tr><th>Study</th><th>Patient</th><th>Test</th><th>Where</th><th>Waiting</th><th>Status</th><th aria-label="Open"></th></tr></thead><tbody>
+    ${st.map(x=>`<tr class="${sel&&sel.id===x.id?'sel':''}"><td><b>${x.id}</b></td><td>Child, ${x.age} y${x.kid?' <span class="chip">App</span>':''}</td><td>${esc(x.test)}<div class="sub">${esc(x.ind)}</div>${x.s===0&&(x.flag||(x.needEcg&&!x.ecgAdded))?'<span class="chip crit">Needs triage</span>':''}</td><td>${esc(x.site)}</td><td>${days(TODAY,x.ref)} days</td>
+     <td><span class="chip ${x.s===6?'good':x.s>=4?'warn':''}">${FLOW[x.s]}</span></td><td><button type="button" data-act="hub-open" data-id="${x.id}">${x.s===5?'Report':'Open'}</button></td></tr>`).join('')}
+   </tbody></table></div></section>
+   <section class="panel"><div class="row"><h2>Service standards</h2><span class="chip quiet">Draft, for the clinical lead to set</span></div><ul class="plain">
     <li>A specialist checks every request before it is booked.</li>
     <li>A 12-lead heart trace is considered with every first blackout or suspected seizure.</li>
     <li>EEG is not used to rule epilepsy out, and not for ADHD alone.</li>
     <li>Staff trained with children at every recording.</li>
     <li>Reports back within 5 working days.</li>
     <li>Abnormal results are talked through with the family, never sent as text.</li></ul>
-    <p class="foot">Clinical points follow NICE guideline NG217 and Medicare guidance on EEG.</p></section>`;
+    <p class="foot">Clinical points follow NICE guideline NG217 and Medicare guidance on EEG.</p></section>
+  </div></section>`;
 }
 
 function parentSummary(){
@@ -462,77 +516,91 @@ function carePanel(){
 }
 function clinic(){
   const c=state.clinic, b=(key,txt,done)=>`<button data-act="send" data-key="${key}"${c.sent[key]?' disabled':''}>${c.sent[key]?done:txt}</button>`;
-  return `<div class="head"><h1>Clinic tools</h1><p>The parent's notes arrive before the visit. Recalls, referral renewals and freed slots keep follow-up patients on track.</p></div>
-  ${parentSummary()}
-  ${carePanel()}
-  <section class="panel"><div class="row"><h2>ADHD shared care</h2><span class="chip quiet">Draft model</span></div>
-   <h3>Conners questionnaires before first visits</h3>
-   <ul class="list">${state.forms.map((f,i)=>`<li><div class="txt"><b>${f.c}</b> <span class="sub">First visit ${fmt(f.visit).slice(4,-5)}</span><div class="sub">Parent form ${f.parent?'in':'waiting'} · teacher form ${f.teacher?'in':'waiting'}</div></div>${f.parent&&f.teacher?'<span class="chip good">Ready to read</span>':b('fm'+i,'Send a reminder','Reminder sent')}</li>`).join('')}</ul>
-   <h3>Video reviews asked for by GPs</h3>
-   ${state.escal.length?`<ul class="list">${state.escal.map((e,i)=>`<li><div class="txt"><b>${e.c}</b> <span class="sub">${esc(e.g)}</span><div class="sub">From ${esc(e.from)}, ${fmt(e.date).slice(4,-5)}. ${esc(e.why)}</div></div>${b('es'+i,'Offer a video time','Time offered')}</li>`).join('')}</ul>`:'<p class="sub">None waiting.</p>'}
-   <h3>Yearly reviews</h3>
-   <ul class="list">${[...state.shared].sort((x,y)=>x.annual<y.annual?-1:1).map(s=>`<li><div class="txt"><b>${s.c}</b> <span class="sub">${esc(s.g)} · ${esc(s.paed)}</span><div class="sub">Due ${fmt(s.annual).slice(4)}, in ${days(s.annual)} days. Regular visits are with the GP.</div></div>${b('an'+s.id,'Send booking link','Link sent')}</li>`).join('')}</ul>
-   <p class="foot">Questionnaire answers arrive unscored. The clinician scores and reads them.</p></section>
-  <section class="panel"><div class="row"><h2>Consults, last 90 days</h2><span class="sub">MBS items 110 and 132 against 116 and 133</span></div>
-   <div class="split" role="img" aria-label="22 percent new consults, 78 percent reviews"><i style="width:22%"></i><i style="width:78%"></i></div>
-   <div class="row"><span><b>22%</b> new · 84 consults</span><span><b>78%</b> reviews · 298 consults</span></div></section>
-  <div class="cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-   <section class="panel"><div class="row"><h2>Reviews due, not booked</h2><span class="chip warn">${c.recalls.length}</span></div><ul class="list">${c.recalls.map((r,i)=>`<li><div class="txt"><b>${r.c}</b> <span class="sub">${r.g}</span><div class="sub">${days(r.due)<0?'Overdue by '+(-days(r.due))+' days':'Due '+fmt(r.due)}</div></div>${b('rc'+i,'Send booking link','Link sent')}</li>`).join('')}</ul></section>
-   <section class="panel"><div class="row"><h2>Referrals expiring</h2><span class="chip warn">${c.expiring.length}</span></div><ul class="list">${c.expiring.map((r,i)=>`<li><div class="txt"><b>${r.c}</b> <span class="sub">${r.g}</span><div class="sub">Expires ${fmt(r.until)}, in ${days(r.until)} days</div></div>${b('ex'+i,'Prompt family and GP','Prompt sent')}</li>`).join('')}</ul></section>
-  </div>
-  <section class="panel"><h2>Freed slots</h2><ul class="list">${c.slots.map((s,i)=>`<li><div class="txt"><b>${s.when}</b><div class="sub">Cancelled. ${s.wl} waitlist families could take it.</div></div>${b('sl'+i,'Offer to waitlist','Offered')}</li>`).join('')}</ul></section>
-  <section class="panel"><div class="row"><h2>Price test</h2><span class="chip quiet">${state.planTaps} tap${state.planTaps===1?'':'s'}</span></div><p class="sub">Parents who tapped Start plan on Navigator at $39 a month.</p></section>`;
-}
-
-function sharedPanel(){
-  return `<section class="panel"><div class="row"><h2>Shared care with you</h2><span class="chip quiet">Draft model</span></div>
-  <p class="sub">Children with ADHD who come back to you for regular visits. The paediatrician's plan says what to check and when, and they review once a year.</p>
-  <ul class="list">${state.shared.map((s,i)=>{const od=days(s.gpDue)<0;return `<li><div class="txt"><b>${s.c}</b> <span class="sub">${esc(s.g)} · plan by ${esc(s.paed)}</span>${s.complex?' <span class="chip">More specialist visits</span>':''}
-    <div class="sub">${od?'Your review is overdue by '+(-days(s.gpDue))+' days':'Your review is due '+fmt(s.gpDue).slice(4,-5)} · repeat script due ${fmt(s.script).slice(4,-5)} · yearly review ${fmt(s.annual).slice(4)}</div></div>
-    <button type="button" data-act="sc-done" data-i="${i}">Review done</button><button type="button" data-act="sc-esc" data-i="${i}"${s.asked?' disabled':''}>${s.asked?'Video review asked for':'Ask for a video review'}</button></li>`;}).join('')}</ul>
-  <p class="foot">Draft model from the clinical lead. State prescribing rules still apply.</p></section>`;
+  const wq=state.forms.filter(f=>!(f.parent&&f.teacher)).length,od=c.recalls.filter(r=>days(r.due)<0).length;
+  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text">
+     <span class="eyebrow">For clinics</span><h1>Clinic tools</h1>
+     <p class="lead">The parent's notes arrive before the visit. Recalls, referral renewals and freed slots keep follow-up patients on track.</p></div></div></div>${sparks}</section>
+  <section class="dash"><div class="wrap stack">
+   <div class="kpis">${kpi('Reviews due',c.recalls.length,od?od+' overdue, not booked':'not booked')}${kpi('Referrals expiring',c.expiring.length,'families and GPs to prompt')}${kpi('Freed slots',c.slots.length,'to offer to the waitlist')}${kpi('Questionnaires',wq,'first visits still waiting')}</div>
+   <div class="cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">${parentSummary()}${carePanel()}</div>
+   <section class="panel"><div class="row"><h2>ADHD shared care</h2><span class="chip quiet">Draft model</span></div>
+    <div class="cols3">
+     <div><h3>Conners questionnaires before first visits</h3>
+      <ul class="list">${state.forms.map((f,i)=>`<li><div class="txt"><b>${f.c}</b> <span class="sub">First visit ${fmt(f.visit).slice(4,-5)}</span><div class="sub">Parent form ${f.parent?'in':'waiting'} · teacher form ${f.teacher?'in':'waiting'}</div></div>${f.parent&&f.teacher?'<span class="chip good">Ready to read</span>':b('fm'+i,'Send a reminder','Reminder sent')}</li>`).join('')}</ul></div>
+     <div><h3>Video reviews asked for by GPs</h3>
+      ${state.escal.length?`<ul class="list">${state.escal.map((e,i)=>`<li><div class="txt"><b>${e.c}</b> <span class="sub">${esc(e.g)}</span><div class="sub">From ${esc(e.from)}, ${fmt(e.date).slice(4,-5)}. ${esc(e.why)}</div></div>${b('es'+i,'Offer a video time','Time offered')}</li>`).join('')}</ul>`:'<p class="sub">None waiting.</p>'}</div>
+     <div><h3>Yearly reviews</h3>
+      <ul class="list">${[...state.shared].sort((x,y)=>x.annual<y.annual?-1:1).map(s=>`<li><div class="txt"><b>${s.c}</b> <span class="sub">${esc(s.g)} · ${esc(s.paed)}</span><div class="sub">Due ${fmt(s.annual).slice(4)}, in ${days(s.annual)} days. Regular visits are with the GP.</div></div>${b('an'+s.id,'Send booking link','Link sent')}</li>`).join('')}</ul></div>
+    </div>
+    <p class="foot">Questionnaire answers arrive unscored. The clinician scores and reads them.</p></section>
+   <div class="cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+    <section class="panel"><div class="row"><h2>Reviews due, not booked</h2><span class="chip warn">${c.recalls.length}</span></div><ul class="list">${c.recalls.map((r,i)=>`<li><div class="txt"><b>${r.c}</b> <span class="sub">${r.g}</span><div class="sub">${days(r.due)<0?'Overdue by '+(-days(r.due))+' days':'Due '+fmt(r.due)}</div></div>${b('rc'+i,'Send booking link','Link sent')}</li>`).join('')}</ul></section>
+    <section class="panel"><div class="row"><h2>Referrals expiring</h2><span class="chip warn">${c.expiring.length}</span></div><ul class="list">${c.expiring.map((r,i)=>`<li><div class="txt"><b>${r.c}</b> <span class="sub">${r.g}</span><div class="sub">Expires ${fmt(r.until)}, in ${days(r.until)} days</div></div>${b('ex'+i,'Prompt family and GP','Prompt sent')}</li>`).join('')}</ul></section>
+   </div>
+   <div class="cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+    <section class="panel"><h2>Freed slots</h2><ul class="list">${c.slots.map((s,i)=>`<li><div class="txt"><b>${s.when}</b><div class="sub">Cancelled. ${s.wl} waitlist families could take it.</div></div>${b('sl'+i,'Offer to waitlist','Offered')}</li>`).join('')}</ul></section>
+    <div class="stack">
+     <section class="panel"><div class="row"><h2>Consults, last 90 days</h2><span class="sub">MBS items 110 and 132 against 116 and 133</span></div>
+      <div class="split" role="img" aria-label="22 percent new consults, 78 percent reviews"><i style="width:22%"></i><i style="width:78%"></i></div>
+      <div class="row"><span><b>22%</b> new · 84 consults</span><span><b>78%</b> reviews · 298 consults</span></div></section>
+     <section class="panel"><div class="row"><h2>Price test</h2><span class="chip quiet">${state.planTaps} tap${state.planTaps===1?'':'s'}</span></div><p class="sub">Parents who tapped Start plan on Navigator at $39 a month.</p></section>
+    </div></div>
+  </div></section>`;
 }
 function careModel(){
   const m=state.cm,B=BANDS.find(b=>b[0]===m.band),paed=m.band==='u17',lead=B[3],n=m.gp,[f1,g1]=CARE.first,[f2,g2]=CARE.second,[fg,lo,hi]=CARE.gp;
-  const total=f1+f2+n*fg,payLo=g1+g2+n*lo,payHi=g1+g2+n*hi,fd=m.forms,nf=(fd.parent?1:0)+(fd.teacher?1:0);
-  const step=(n,who,title,text,fee,chip)=>`<li><span class="n">Step ${n} · ${who}</span><b>${title}</b><p>${text}</p>${chip?'<span class="chip">More specialist visits</span>':''}${fee&&paed?`<span class="fee">${fee}</span>`:''}</li>`;
-  return `<div class="head"><h1>ADHD care</h1><p>A specialist does the assessment and sets the plan. Your GP does the regular visits close to home. The specialist reviews once a year, and sooner by video if something changes.</p></div>
-  <section class="panel"><div class="row"><div class="seg" role="group" aria-label="Age">${BANDS.map(b=>`<button type="button" data-act="cm-band" data-b="${b[0]}" aria-pressed="${b[0]===m.band}">${b[1]}</button>`).join('')}</div><span class="chip quiet">Proposed model, draft</span></div>
-   <p>${B[1]}: ${B[2].toLowerCase().replace(/^a/,'an a').replace(/^p/,'a p')} leads the care.</p>
-   <label class="check"><input type="checkbox" id="cm-complex"${m.complex?' checked':''}><span>Autism, epilepsy or Tourette's as well</span></label></section>
-  <ol class="path">
-   ${step(1,B[2],'Assessment and diagnosis',(paed?'Two visits. You and the teacher fill in a questionnaire first, so it is ready before you walk in. ':'')+`The ${lead} confirms the diagnosis, checks for anything else going on and writes the plan.`,'About '+money(f1)+', then about '+money(f2))}
-   ${step(2,'Your GP','Regular visits','Your GP follows the plan: check-ins, repeat scripts and routine checks.','About '+money(fg)+' a visit')}
-   ${step(3,B[2],m.complex?'Closer review':'Yearly review',m.complex?`With autism, epilepsy or Tourette's, the ${lead} is involved more often than once a year. The steps stay the same.`:`Once a year the ${lead} reviews the plan. If something changes sooner, your GP asks for a video visit.`,'',m.complex)}
-  </ol>
-  <div class="cols" style="grid-template-columns:minmax(0,2fr) minmax(0,3fr)">
-   <div class="stack">${paed?`<section class="panel"><div class="row"><h2>Before the first visit</h2><span class="chip ${nf===2?'good':''}">${nf} of 2 in</span></div>
-     <p class="sub">A questionnaire, filled in at home and at school. The paediatrician has the answers before the visit.</p>
+  const total=f1+f2+n*fg,payLo=g1+g2+n*lo,payHi=g1+g2+n*hi,fd=m.forms,nf=(fd.parent?1:0)+(fd.teacher?1:0),pay=n?money(payLo)+' to '+money(payHi):money(payLo),an=/^a/.test(lead)?'an':'a';
+  const step=(i,who,title,text,fee,chip)=>`<li style="--c:var(--${TINT[i]});--s:var(--${TINT[i]}-soft)"><span class="dot">${i+1}</span><span class="who">${who}</span><h3>${title}</h3><p>${text}</p>${chip?'<span class="chip">More specialist visits</span>':''}${fee&&paed?`<span class="fee">${fee}</span>`:''}</li>`;
+  return `<section class="band"><div class="wrap band-2"><div class="band-text">
+    <span class="eyebrow">ADHD care · proposed model, draft</span>
+    <h1>ADHD care, shared between a specialist and <em>your GP</em></h1>
+    <p class="lead">A specialist does the assessment and sets the plan. Your GP does the regular visits close to home. The specialist reviews once a year, and sooner by video if something changes.</p>
+    <div class="ctrl"><div class="seg" role="group" aria-label="Age">${BANDS.map(b=>`<button type="button" data-act="cm-band" data-b="${b[0]}" aria-pressed="${b[0]===m.band}">${b[1]}</button>`).join('')}</div>
+     <label class="check"><input type="checkbox" id="cm-complex"${m.complex?' checked':''}><span>Autism, epilepsy or Tourette's as well</span></label></div>
+    <div class="cta-row"><button type="button" class="primary cta" data-act="cm-find">Find ${paed?'a paediatrician':'a psychiatrist'} ${ARROW}</button><a class="btn cta" href="#gp-referral">I am a GP</a></div>
+   </div>
+   <div class="band-side"><div class="fcard">
+    <span class="lab">${B[1]}</span><p class="leads">${an==='an'?'An':'A'} ${lead} leads the care.</p>
+    <ol class="mini"><li>Assessment and diagnosis</li><li>Regular visits with your GP</li><li>${m.complex?'Closer review':'Yearly review'}</li></ol>
+    <div class="divide"></div>
+    ${paed?`<span class="lab">First year, out of pocket</span><div class="bignum">About ${pay}</div><p class="sub">With ${plural(n,'GP visit')}. ${money(total)} in fees before Medicare. Indicative, not a quote.</p>`
+     :`<p class="sub">Fees for care led by ${an} ${lead} are not set yet.</p>`}
+   </div></div></div>${sparks}</section>
+  <section class="sec"><div class="wrap">${secHead('How it works','Three steps, the same at every age','Only the specialist changes with age.')}
+   <ol class="flow">
+    ${step(0,B[2],'Assessment and diagnosis',(paed?'Two visits. You and the teacher fill in a questionnaire first, so it is ready before you walk in. ':'')+`The ${lead} confirms the diagnosis, checks for anything else going on and writes the plan.`,'About '+money(f1)+', then about '+money(f2))}
+    ${step(1,'Your GP','Regular visits','Your GP follows the plan: check-ins, repeat scripts and routine checks.','About '+money(fg)+' a visit')}
+    ${step(2,B[2],m.complex?'Closer review':'Yearly review',m.complex?`With autism, epilepsy or Tourette's, the ${lead} is involved more often than once a year. The steps stay the same.`:`Once a year the ${lead} reviews the plan. If something changes sooner, your GP asks for a video visit.`,'',m.complex)}
+   </ol></div></section>
+  ${paed?`<section class="sec alt"><div class="wrap">${secHead('What it costs','What you pay, visit by visit','Figures proposed by the clinical lead. "You pay" is after the Medicare rebate and needs a current GP referral. Not a quote.')}
+   <div class="grid2 eq">
+    <div class="wcard"><div class="row"><h3>Each visit</h3><span class="chip quiet">Indicative</span></div>
+     <table class="cost"><thead><tr><th>Visit</th><th>Fee, about</th><th>You pay, about</th></tr></thead><tbody>
+      <tr><td>Paediatrician, first visit</td><td>${money(f1)}</td><td>${money(g1)}</td></tr>
+      <tr><td>Paediatrician, second visit</td><td>${money(f2)}</td><td>${money(g2)}</td></tr>
+      <tr><td>GP visit, each</td><td>${money(fg)}</td><td>${money(lo)} to ${money(hi)}</td></tr></tbody></table>
+     <div class="cmp"><span class="lab">The assessment, compared</span>
+      <div class="ln"><span>With a paediatrician, two visits</span><b>about ${money(f1+f2)}</b><div class="bar"><i style="width:${Math.round(100*(f1+f2)/CARE.gpOnly)}%"></i></div></div>
+      <div class="ln"><span>With a GP only, one long consult</span><b>about ${money(CARE.gpOnly)}</b><div class="bar"><i class="alt" style="width:100%"></i></div></div></div></div>
+    <div class="wcard"><div class="row"><h3 id="cm-gp-lab">GP visits in the first year</h3><div class="stepper" role="group" aria-labelledby="cm-gp-lab"><button type="button" data-act="cm-gp" data-d="-1" aria-label="One fewer GP visit"${n<=0?' disabled':''}>−</button><output aria-live="polite">${n}</output><button type="button" data-act="cm-gp" data-d="1" aria-label="One more GP visit"${n>=12?' disabled':''}>+</button></div></div>
+     <div><span class="lab">First year, out of pocket</span><div class="bignum">About ${pay}</div><p class="sub">${money(total)} in fees before Medicare.</p></div>
+     ${m.complex?'<p class="note">More specialist visits add to the cost. The paediatrician tells you how many at the first visit.</p>':''}
+     <p class="foot">Two paediatrician visits, then ${plural(n,'GP visit')}. A GP referral comes first, so Medicare can pay a rebate.</p></div>
+   </div></div></section>
+  <section class="sec"><div class="wrap grid2 mid"><div>${secHead('Before the first visit','The questionnaire is ready before you walk in','Filled in at home and at school. The paediatrician has the answers before the visit. The app passes them on and does not score them.')}</div>
+    <div class="wcard"><div class="row"><h3>Questionnaire</h3><span class="chip ${nf===2?'good':''}">${nf} of 2 in</span></div>
      <ul class="list"><li><div class="txt"><b>Parent form</b><div class="sub">At home, on your phone</div></div><button type="button" data-act="cm-form" data-f="parent"${fd.parent?' disabled':''}>${fd.parent?'Done':'Fill in'}</button></li>
-      <li><div class="txt"><b>Teacher form</b><div class="sub">We email a link to the school</div></div><button type="button" data-act="cm-form" data-f="teacher"${fd.teacher?' disabled':''}>${fd.teacher?'Sent':'Send to teacher'}</button></li></ul>
-     <p class="foot">The app passes the answers on. It does not score them.</p></section>`:''}
-    <section class="panel"><h2>Next step</h2><div class="row" style="justify-content:flex-start"><button type="button" class="primary" data-act="cm-find">Find ${paed?'a paediatrician':'a psychiatrist'}</button><a class="btn" href="#gp-referral">I am a GP</a></div>
-     <p class="foot">A GP referral comes first, so Medicare can pay a rebate.</p></section></div>
-   <section class="panel"><div class="row"><h2>What it costs</h2><span class="chip quiet">Indicative</span></div>
-    ${paed?`<table class="cost"><thead><tr><th>Visit</th><th>Fee, about</th><th>You pay, about</th></tr></thead><tbody>
-     <tr><td>Paediatrician, first visit</td><td>${money(f1)}</td><td>${money(g1)}</td></tr>
-     <tr><td>Paediatrician, second visit</td><td>${money(f2)}</td><td>${money(g2)}</td></tr>
-     <tr><td>GP visit, each</td><td>${money(fg)}</td><td>${money(lo)} to ${money(hi)}</td></tr></tbody></table>
-    <div class="row"><b id="cm-gp-lab">GP visits in the first year</b><div class="stepper" role="group" aria-labelledby="cm-gp-lab"><button type="button" data-act="cm-gp" data-d="-1" aria-label="One fewer GP visit"${n<=0?' disabled':''}>−</button><output aria-live="polite">${n}</output><button type="button" data-act="cm-gp" data-d="1" aria-label="One more GP visit"${n>=12?' disabled':''}>+</button></div></div>
-    <div><span class="lab">First year, out of pocket</span><div class="big">About ${n?money(payLo)+' to '+money(payHi):money(payLo)}</div><p class="sub">${money(total)} in fees before Medicare.</p></div>
-    <div class="cmp"><span class="lab">The assessment, compared</span>
-     <div class="ln"><span>With a paediatrician, two visits</span><b>about ${money(f1+f2)}</b><div class="bar"><i style="width:${Math.round(100*(f1+f2)/CARE.gpOnly)}%"></i></div></div>
-     <div class="ln"><span>With a GP only, one long consult</span><b>about ${money(CARE.gpOnly)}</b><div class="bar"><i class="alt" style="width:100%"></i></div></div></div>
-    ${m.complex?'<p class="note">More specialist visits add to the cost. The paediatrician tells you how many at the first visit.</p>':''}
-    <p class="foot">Figures proposed by the clinical lead. "You pay" is after the Medicare rebate and needs a current GP referral. Not a quote.</p>`
-    :`<p>Fees for care led by an ${lead} are not set yet.</p><p class="foot">The steps are the same at every age. Only the specialist changes.</p>`}
-   </section></div>`;
+      <li><div class="txt"><b>Teacher form</b><div class="sub">We email a link to the school</div></div><button type="button" data-act="cm-form" data-f="teacher"${fd.teacher?' disabled':''}>${fd.teacher?'Sent':'Send to teacher'}</button></li></ul></div>
+   </div></section>`:''}
+  <section class="sec alt"><div class="wrap closer"><h2>Start with a GP referral</h2><p>A GP referral comes first, so Medicare can pay a rebate. Then we match you to ${an} ${lead}.</p>
+   <div class="cta-row center"><button type="button" class="primary cta" data-act="cm-find">Find ${paed?'a paediatrician':'a psychiatrist'} ${ARROW}</button><a class="btn cta" href="#gp-referral">I am a GP</a></div></div></section>`;
 }
 const VIEWS={family,'find-care':findCare,'adhd-care':careModel,'gp-referral':gpView,diagnostics:hub,clinic};
 function render(){
   const v=VIEWS[location.hash.slice(1)]?location.hash.slice(1):'family';
-  document.querySelectorAll('.tabs a').forEach(a=>a.getAttribute('href')==='#'+v?a.setAttribute('aria-current','page'):a.removeAttribute('aria-current'));
-  document.getElementById('view').innerHTML=VIEWS[v]();
+  document.querySelectorAll('.tabs a').forEach(a=>{if(a.getAttribute('href')==='#'+v){a.setAttribute('aria-current','page');const n=a.parentElement;if(n&&n.scrollWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-n.offsetLeft-(n.clientWidth-a.offsetWidth)/2;}else a.removeAttribute('aria-current');});
+  const root=document.getElementById('view');document.body.dataset.view=v;root.classList.toggle('enter',render.last!==v);render.last=v;
+  root.innerHTML=VIEWS[v]();
   const fam=v==='family',nav=$('fnav');nav.hidden=!fam;
   if(fam)nav.innerHTML='<div>'+[['family','Family',I.people],['today','Today',I.home],['notes','Notes',I.eye],['tests','Tests',I.pulse],['care','Care',I.cal],['learn','Learn',I.book]].map(([t,l,i])=>`<button type="button" data-act="ftab" data-tab="${t}"${state.ftab===t?' aria-current="page"':''}>${i}<span>${l}</span></button>`).join('')+'</div>';
   syncFab();
@@ -568,7 +636,7 @@ document.addEventListener('click',e=>{
   else if(a==='quick-toggle'){state.did[state.child]=!state.did[state.child];toast(state.did[state.child]?'Nice work!':'Removed');}
   else if(a==='resched'){toast('Reschedule request sent for '+b.dataset.what);return;}
   else if(a==='renew'){state.renew[state.child]=true;toast('Renewal request sent to the GP');}
-  else if(a==='hear'){hear($('q-said').value);}
+  else if(a==='hear'||a==='say'){hear(a==='say'?SAY[+b.dataset.i][1]:$('q-said').value);render();toResults();return;}
   else if(a==='learn-open'){const first=[...LEARN].sort((x,y)=>(AGE[state.child]>=y.ages[0]&&AGE[state.child]<=y.ages[1])-(AGE[state.child]>=x.ages[0]&&AGE[state.child]<=x.ages[1]))[0].id,cur=state.learnOpen===''?first:state.learnOpen;state.learnOpen=cur===b.dataset.id?'none':b.dataset.id;state.playing=null;}
   else if(a==='play'){state.playing=state.playing===b.dataset.ep?null:b.dataset.ep;}
   else if(a==='learn-chart'){state.chart[state.child]='height';state.ftab='notes';window.scrollTo(0,0);}
@@ -776,7 +844,7 @@ $('pip-open').addEventListener('click',()=>openPip(true));
 $('pip-close').addEventListener('click',()=>openPip(false));
 $('pip-stop').addEventListener('click',()=>pip.ctl&&pip.ctl.abort());
 $('pip-voice').addEventListener('click',e=>{pip.voice=!pip.voice;e.currentTarget.setAttribute('aria-pressed',String(pip.voice));e.currentTarget.textContent=pip.voice?'Voice on':'Read aloud';if(!pip.voice&&pip.tts)pip.tts.stop();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)openPip(false);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)openPip(false);if(e.key==='Enter'&&!e.shiftKey&&e.target.id==='q-said'){e.preventDefault();hear(e.target.value);render();toResults();}});
 (async()=>{
   if(!window.claude||!window.claude.use)return;
   try{const s=await window.claude.use('sample');if(s){const lim=await s.limits().catch(()=>null);if(lim&&lim.tools){pip.sample=s;pip.live=true;}}
