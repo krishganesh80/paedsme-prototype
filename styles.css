@@ -185,3 +185,59 @@ body.has-fnav #toast{bottom:calc(134px + env(safe-area-inset-bottom,0px))}
 .panel.hero details summary{font-weight:700;color:var(--ink);padding:6px 0}
 .app .panel{gap:10px}
 .app .quick{gap:12px}
+
+/* Feedback pass (15 Nov 2026): ADHD shared care, the Learn tab, and matching in the family's own words. */
+.fnav div{grid-template-columns:repeat(6,minmax(0,1fr))}
+a.btn{text-decoration:none;display:inline-flex;align-items:center}
+a{color:var(--accent)}
+.tabs a{color:var(--ink)}
+/* The pathway: three white cards, one colour each, read left to right (top to bottom on a phone). */
+.path{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.path{grid-template-columns:minmax(0,1fr)}}
+.path li{background:var(--surface);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;box-shadow:var(--shadow);border-top:6px solid var(--c)}
+.path li:nth-child(1){--c:var(--accent);--s:var(--accent-soft)}
+.path li:nth-child(2){--c:var(--orange);--s:var(--orange-soft)}
+.path li:nth-child(3){--c:var(--violet);--s:var(--violet-soft)}
+.path .n{font-size:.74rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 10px;border-radius:99px;background:var(--s);color:var(--ink)}
+.path b{font-family:var(--display);font-size:1.2rem;line-height:1.2}
+.path p{font-size:.94rem}
+.path .fee{margin-top:auto;padding-top:4px;font-weight:700;font-size:.9rem}
+table.cost{min-width:0}
+table.cost th:nth-child(n+2),table.cost td:nth-child(n+2){text-align:right;white-space:nowrap;padding-right:0;padding-left:10px}
+.stepper{display:inline-flex;align-items:center;gap:10px}
+.stepper button{width:44px;min-height:44px;padding:0;font-size:1.25rem;line-height:1}
+.stepper output{font-family:var(--display);font-weight:700;font-size:1.3rem;min-width:2ch;text-align:center;font-variant-numeric:tabular-nums}
+.cmp{display:flex;flex-direction:column;gap:10px}
+.cmp .ln{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:baseline;font-size:.92rem}
+.cmp .bar{grid-column:1/-1;height:12px}
+.cmp .bar i.alt{background:var(--muted)}
+/* Find care, in your own words. */
+.mic{display:inline-flex;align-items:center;gap:6px}
+.mic svg{width:18px;height:18px}
+.mic[aria-pressed="true"]{background:var(--lime);border-color:var(--lime);color:#263238}
+.heard{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+/* Learn: one row per topic, opened one at a time. */
+.topic{padding:0!important;gap:0!important;overflow:hidden}
+.topic .th{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:0;border-radius:0!important;padding:14px 16px!important;background:transparent;min-height:68px}
+.topic .ti{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--s);color:var(--ink)}
+.topic .th .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.topic .th b{font-family:var(--display);font-size:1.05rem}
+.topic .th .sub{font-weight:500}
+.topic .th[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.topic .tb{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
+.eps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.eps li{display:flex;gap:12px;align-items:center}
+.eps .play{width:44px;height:44px;min-height:44px;padding:0!important;border-radius:50%!important;flex:none;display:grid;place-items:center;background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.eps .play svg{width:20px;height:20px}
+.eps .play[aria-pressed="true"]{background:var(--lime);border-color:var(--lime);color:#263238}
+.eps .txt{min-width:0;flex:1;display:flex;flex-direction:column}
+.eps .txt b{font-size:.98rem;line-height:1.3}
+.eps .prog{height:4px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.eps .prog i{display:block;height:100%;width:100%;background:var(--lime);transform-origin:left;animation:play 24s linear both}
+@keyframes play{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.eps .prog i{animation:none;transform:scaleX(.35)}}
+.panel h3{margin-top:6px}
+/* Two-column sections set their ratio inline, which used to beat the phone rule above: on a phone
+   they stayed two cramped columns. One column under 760px, whatever the inline ratio says. */
+@media (max-width:760px){.cols{grid-template-columns:minmax(0,1fr)!important}}
+@media (max-width:420px){table.cost th,table.cost td{font-size:.86rem}}
