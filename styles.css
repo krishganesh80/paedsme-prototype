@@ -520,3 +520,53 @@ button.cta:hover svg,a.cta:hover svg{transform:translateX(3px)}
 .daylog b{font-size:1rem}
 .field .cpill{text-transform:none;letter-spacing:0;font-size:.92rem;font-weight:400;color:var(--ink)}
 .field .cpill:has(input:checked){font-weight:700}
+
+/* Meeting of 15 Nov 2026: Rapid Access requests, five video and photo topics, working media on notes. */
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+@media (max-width:1000px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.grid4{grid-template-columns:minmax(0,1fr)}}
+.tag.alt{background:var(--bg);color:var(--ink)}
+.wait span{display:block;max-width:22ch}
+.doc-side .wait{display:flex;flex-direction:column;align-items:flex-end}
+@media (max-width:720px){.doc-side .wait{align-items:flex-start}.wait span br{display:none}}
+.foot.disc{border-top:1px solid var(--line);padding-top:10px}
+.site-foot .sf-note+.sf-note{border-top:0;padding-top:0;margin-top:-14px}
+/* The referral request: what the parent takes to their GP. */
+.req{border:2px solid var(--lime);box-shadow:none;background:var(--surface)}
+.res .req{border-radius:24px;padding:22px}
+.req details summary{cursor:pointer;font-weight:700;padding:6px 0}
+.letter{margin-top:8px;padding:16px 18px;border-radius:16px;background:var(--bg);display:flex;flex-direction:column;gap:8px;font-size:.92rem}
+/* Learn: five category buttons, then a grid of short videos and photo guides. */
+.cats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.cats button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 2px 8px!important;border:2px solid transparent;border-radius:16px!important;background:var(--surface);font-size:.72rem;font-weight:700;min-height:76px;box-shadow:var(--shadow)}
+.cats button span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.cats .ci{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--s);color:var(--ink)}
+.cats button[aria-pressed="true"]{border-color:var(--lime);background:var(--lime-soft)}
+.media{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mcard{width:100%;height:100%;display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;border:0!important;background:transparent;padding:0!important;border-radius:16px!important;min-height:0}
+.mth{position:relative;display:grid;place-items:center;aspect-ratio:4/3;border-radius:16px;background:var(--s);color:var(--ink);overflow:hidden}
+.mth>svg{width:40px;height:40px;padding:9px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow)}
+.mth .dur{position:absolute;left:8px;bottom:8px;font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:99px;background:var(--surface);color:var(--ink)}
+.mth .prog{position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--line)}
+.mth .prog i{display:block;height:100%;width:100%;background:var(--lime);transform-origin:left;animation:play 24s linear both}
+.mcard[aria-pressed="true"] .mth{outline:3px solid var(--lime);outline-offset:-3px}
+.mcard b{font-size:.94rem;line-height:1.3}
+@media (prefers-reduced-motion:reduce){.mth .prog i{animation:none;transform:scaleX(.35)}}
+/* A photo or video on a note. */
+.mpick{display:flex;align-items:center;justify-content:center;gap:10px;min-height:64px;border:2px dashed var(--line);border-radius:16px;font-weight:700;cursor:pointer;color:var(--ink)}
+.mpick:hover,.mpick:focus-within{border-color:var(--ink)}
+.field .mpick,.mpick{text-transform:none;letter-spacing:0;font-size:.95rem}
+.mprev{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.mprev video,.mprev img{width:100%;max-height:240px;object-fit:cover;border-radius:16px;background:var(--bg)}
+.mthumb{width:96px;height:72px;object-fit:cover;border-radius:12px;background:var(--bg);flex:none}
+/* Team view. */
+.eng{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.eng li{display:flex;gap:14px;align-items:center}
+.eng .ti{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--s);color:var(--ink)}
+.eng .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.eng .bar{height:10px}
+.kpi b{overflow-wrap:anywhere}
+/* Five category buttons fit a phone without cutting a label. */
+.cats{display:flex;gap:6px}
+.cats button{flex:1 0 auto;min-width:58px;padding:10px 6px 8px!important;font-size:.68rem}
+.cats button span:last-child{overflow:visible}
