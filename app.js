@@ -24,26 +24,30 @@ const LANGS=[...new Set(CLINICIANS.flatMap(c=>c.langs))].sort();
 const STEPS=['Received','Triaged','Booked','Seen','Letter back'];
 const FLOW=['Referred','Triaged','Booked','Recording','Uploaded','Reporting','Reported'];
 
-const NEURO=['Talking','Moving','Sleep','Behaviour','Funny turn','Eating'],HEART=['Fast heartbeat','Dizzy','Fainted','Chest pain','Short of breath','Tired'];
+const NEURO=['Talking','Moving','Sleep','Behaviour','Funny turn','Eating'],HEART=['Fast heartbeat','Dizzy','Fainted','Chest pain','Short of breath','Tired'],BABY=['Feeding','Sleep','Skin','Moving','Babbling','Unsettled'];
 let state={
  child:'mia',
  kids:{
-  mia:{name:'Mia',doc:'Dr Tran',age:'4 years',prog:'Funny turns check',cats:NEURO,dcat:'Funny turn',tiles:['note','win','sleep','question'],refUntil:'2027-03-14',refFrom:'2026-03-14',review:'After both tests',
+  mia:{name:'Mia',doc:'Dr Tran',age:'4 years',prog:'Funny turns check',cats:NEURO,dcat:'Funny turn',tiles:['note','win','sleep','feed','rash','question'],refUntil:'2027-03-14',refFrom:'2026-03-14',review:'After both tests',
     plan:['Two tests to find out what the blank stares are','Keep adding notes, with a video if you can','Check-in with Dr Tran once both tests are back'],
     team:['Dr Amelia Tran, children\'s doctor','Dr Priya Raman, brain specialist','Dr Hannah Weiss, heart specialist','Sophie Carter, speech','Dr R. Mehta, GP']},
-  arjun:{name:'Arjun',doc:'Dr Raman',age:'9 years',prog:'Epilepsy care',cats:NEURO,dcat:'Funny turn',tiles:['note','win','sleep','question'],sos:true,refUntil:'2026-12-20',refFrom:'2025-12-20',review:'Every 3 months',
+  arjun:{name:'Arjun',doc:'Dr Raman',age:'9 years',prog:'Epilepsy care',cats:NEURO,dcat:'Funny turn',tiles:['note','win','sleep','feed','rash','question'],sos:true,refUntil:'2026-12-20',refFrom:'2025-12-20',review:'Every 3 months',
     plan:['Morning medicine every day','Log every funny turn, with a video if you can','Check-in every 3 months, brain wave test once a year'],
     team:['Dr Priya Raman, brain specialist','Dr R. Mehta, GP','Ms Okoro, class teacher']},
-  zoe:{name:'Zoe',doc:'Dr Weiss',age:'13 years',prog:'Heart rhythm check',cats:HEART,dcat:'Fast heartbeat',tiles:['note','win','sleep','question'],refUntil:'2027-10-30',refFrom:'2026-10-30',review:'After the monitor',
+  zoe:{name:'Zoe',doc:'Dr Weiss',age:'13 years',prog:'Heart rhythm check',cats:HEART,dcat:'Fast heartbeat',tiles:['note','win','sleep','feed','rash','question'],refUntil:'2027-10-30',refFrom:'2026-10-30',review:'After the monitor',
     plan:['A 24-hour monitor to see her heart on a normal day','Tap the button whenever she feels something','Check-in with Dr Weiss when the report is back'],
-    team:['Dr Hannah Weiss, heart specialist','Dr R. Mehta, GP','Coach Bell, netball']}},
+    team:['Dr Hannah Weiss, heart specialist','Dr R. Mehta, GP','Coach Bell, netball']},
+  ivy:{name:'Ivy',doc:'Dr Fitzgerald',age:'10 months',prog:'Feeding and growth check',cats:BABY,dcat:'Feeding',tiles:['feed','sleep','rash','note','win','question'],ev:false,refUntil:'2027-09-02',refFrom:'2026-09-02',review:'10 Dec',
+    plan:['Log feeds and sleep for two weeks','Add a photo when the rash shows up','Check-in with Dr Fitzgerald on 10 Dec'],
+    team:['Dr Leo Fitzgerald, children\'s doctor','Ella Morgan, lactation consultant','Dr R. Mehta, GP','Child health nurse']}},
  appts:[
   {kid:'mia',date:'2026-11-19',time:'9:30 am',what:'Brain wave test (EEG)',who:'PaedsMe Diagnostics, Southport',mode:'In person',prep:['Stay up 2 hours late the night before','Wash hair, no products','Bring a toy and a snack','It takes about an hour']},
   {kid:'mia',date:'2026-12-03',time:'2:15 pm',what:'Check-in with Dr Tran',who:'Dr Amelia Tran',mode:'Video',prep:['Tick off new skills this week','Write down your questions']},
   {kid:'mia',date:'2026-12-10',time:'10:00 am',what:'Speech session',who:'Sophie Carter',mode:'In person',prep:['Bring the home practice sheet']},
   {kid:'arjun',date:'2026-11-26',time:'11:00 am',what:'Check-in with Dr Raman',who:'Dr Priya Raman',mode:'In person',prep:['Add anything new to the diary','Bring his medicines']},
   {kid:'arjun',date:'2027-02-25',time:'9:00 am',what:'Check-in with Dr Raman',who:'Dr Priya Raman',mode:'Video',prep:['Add anything new to the notes']},
-  {kid:'zoe',date:'2026-11-27',time:'3:30 pm',what:'Check-in with Dr Weiss',who:'Dr Hannah Weiss',mode:'Video',prep:['Finish the 24-hour monitor','Post it back in the bag','Write down your questions']}],
+  {kid:'zoe',date:'2026-11-27',time:'3:30 pm',what:'Check-in with Dr Weiss',who:'Dr Hannah Weiss',mode:'Video',prep:['Finish the 24-hour monitor','Post it back in the bag','Write down your questions']},
+  {kid:'ivy',date:'2026-12-10',time:'11:30 am',what:'Check-in with Dr Fitzgerald',who:'Dr Leo Fitzgerald',mode:'Video',prep:['Log feeds and sleep this week','Add a photo if the rash comes back','Write down your questions']}],
  prepDone:{},
  milestones:[['Speaks in sentences of four or more words',true],['Names four colours',true],['Hops on one foot',false],['Draws a person with three parts',true],['Plays cooperatively with other children',true],['Dresses with little help',false]],
  growth:[[2,86],[2.5,91],[3,95.5],[3.5,99],[4,102.5]],
@@ -51,7 +55,7 @@ let state={
  results:{mia:[{date:'2026-10-06',title:'Care plan, updated',by:'Dr Amelia Tran',note:'Speech sessions every 2 weeks. Brain wave test booked. Check-in in December.'}],
           arjun:[{date:'2026-10-28',title:'Brain wave test report',by:'Dr Priya Raman',note:'Dr Raman will go through it with you on 26 Nov.'},{date:'2026-08-14',title:'Care plan',by:'Dr Priya Raman',note:'Keep the diary going. Check-in every 3 months.'}]},
  renew:{},log:[],chart:{},heights:{mia:[[2,86],[2.5,91],[3,95.5],[3.5,99],[4,102.5]],arjun:[[7,122.5],[8,128],[9,133.5]],zoe:[[11,145],[12,152],[13,157.5]]},
- todo:{mia:[['Speech practice, 10 minutes',false],['Add a note if you see a blank stare',false],['Bed by 7:30 tonight',false]],arjun:[['Morning medicine',false],['Log last night\'s sleep',false],['Pack medicine for school camp',false]],zoe:[['Keep the monitor on',true],['Tap the button when you feel something',true],['No bath or swim today',false]]},
+ todo:{mia:[['Speech practice, 10 minutes',false],['Add a note if you see a blank stare',false],['Bed by 7:30 tonight',false]],arjun:[['Morning medicine',false],['Log last night\'s sleep',false],['Pack medicine for school camp',false]],zoe:[['Keep the monitor on',true],['Tap the button when you feel something',true],['No bath or swim today',false]],ivy:[['Log today\'s feeds',false],['Log naps',false],['Photo if the rash shows up',false]]},
  ftab:'today',hubLine:'All',hubSel:'S-1046',drafts:{},jOpen:false,quick:null,jdone:{},sent:{},plan:false,planTaps:0,
  notes:{mia:[{date:'2026-11-08',cat:'Funny turn',text:'Blank stare at kindy pickup. Her teacher saw it too.',video:true},{date:'2026-11-01',cat:'Funny turn',text:'Stared and did not answer for about 10 seconds at dinner.',video:false},{date:'2026-10-20',cat:'Talking',text:'People outside the family find her hard to understand.',video:false}],
         arjun:[{date:'2026-11-02',cat:'Funny turn',text:'Staring spell at breakfast, about 20 seconds.',video:false},{date:'2026-10-21',cat:'Funny turn',text:'Short episode after sport. Tired afterwards.',video:true}]},
@@ -83,6 +87,13 @@ let state={
 };
 state.notes.zoe=[{date:'2026-11-12',cat:'Felt something',text:'Tapped the button at 8:40 am',video:false},{date:'2026-11-03',cat:'Fast heartbeat',text:'Heart racing after the netball warm-up, about 5 minutes.',video:false},{date:'2026-10-24',cat:'Fainted',text:'Fainted at netball training. Awake again within a minute.',video:false}];
 state.wins.zoe=[];state.questions.zoe=['Can I keep playing netball?'];state.sleep.zoe=8;state.results.zoe=[];
+state.notes.ivy=[{date:'2026-11-09',cat:'Feeding',text:'Refused the bottle at daycare. Fed well at home.',video:false},{date:'2026-10-30',cat:'Sleep',text:'Waking every two hours since Tuesday.',video:false}];
+state.wins.ivy=['Pulls up to stand','Waves bye-bye'];state.questions.ivy=['Can we keep one night feed?'];state.sleep.ivy=10.5;state.results.ivy=[];
+/* The three home logs: feeding, sleep (naps here, last night in state.sleep) and rashes. Entries are what the family typed; m is minutes after midnight, for ordering. */
+state.feeds={mia:[],arjun:[],zoe:[],ivy:[{date:TODAY,m:770,time:'12:50 pm',type:'Solids',detail:'Pumpkin, a few spoons'},{date:TODAY,m:690,time:'11:30 am',type:'Bottle',detail:'120 mL'},{date:TODAY,m:575,time:'9:35 am',type:'Solids',detail:'Porridge and banana'},{date:TODAY,m:400,time:'6:40 am',type:'Breast',detail:'Left side, 14 min'}]};
+state.naps={mia:[],arjun:[],zoe:[],ivy:[{date:TODAY,m:590,time:'9:50 am',h:1.5}]};
+state.rashes={mia:[],arjun:[],zoe:[],ivy:[{date:'2026-11-10',m:1035,time:'5:15 pm',where:['Face'],text:'Red, dry patches on both cheeks. Worse after the bath.',photo:true},{date:'2026-11-03',m:480,time:'8:00 am',where:['Arms','Legs'],text:'Small bumps in the elbow and knee creases.',photo:true}]};
+state.feedType=null;
 const label=k=>CONCERNS.find(c=>c[0]===k)[1];
 const opts=(arr,v)=>arr.map(o=>{const[k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${k==v?' selected':''}>${esc(t)}</option>`;}).join('');
 const SEED=JSON.parse(JSON.stringify(state));
@@ -97,12 +108,14 @@ const LEARN=[
   eps:[['What to write down if you are wondering about talking',4,'Dr Amelia Tran'],['Play, pointing and eye contact: how to describe what you see',5,'Dr Samuel Okafor'],['Who to see first, and what a referral does',3,'Dr Noah Bennett']]},
  {id:'sleep',title:'Sleep',ages:[0,18],ico:'moon',blurb:'Log the hours each night. The chart goes to your doctor with your notes.',track:['sleep','Log sleep'],
   eps:[['How to log sleep so your doctor can use it',3,'Dr Grace Liu'],['Bedtime: the questions parents send us',6,'Dr Grace Liu']]},
- {id:'feeding',title:'Feeding and breastfeeding',ages:[0,3],ico:'bottle',blurb:'Feeds, bottles and first foods. Note what happens and who you have already asked.',track:['note','Add a feeding note','Eating'],
+ {id:'feeding',title:'Feeding and breastfeeding',ages:[0,3],ico:'bottle',blurb:'Feeds, bottles and first foods. Note what happens and who you have already asked.',track:['feed','Log a feed'],
   eps:[['Breastfeeding help: who to call',4,'Ella Morgan, lactation consultant'],['Starting solids: what to write down for your nurse',4,'Ella Morgan, lactation consultant']]},
  {id:'growth',title:'Growth and weight',ages:[0,18],ico:'chart',blurb:'Plot height at home. Your doctor reads the chart.',track:['height','Open the chart'],
   eps:[['Measuring height and weight at home',3,'Dr Leo Fitzgerald']]},
- {id:'food',title:'Food and nutrition',ages:[1,18],ico:'bowl',blurb:'Everyday eating, fussy eaters, and special diets that your care team sets up.',track:['note','Add a food note','Eating'],
+ {id:'food',title:'Food and nutrition',ages:[1,18],ico:'bowl',blurb:'Everyday eating, fussy eaters, and special diets that your care team sets up.',track:['feed','Log a meal'],
   eps:[['Fussy eating: what to note before a visit',4,'Jo Castellanos, dietitian'],['Keto diet for seizures: how your care team sets it up',6,'Jo Castellanos, dietitian']]},
+ {id:'skin',title:'Skin and rashes',ages:[0,18],ico:'spots',blurb:'Log where it is and what it looks like, with a photo. Your doctor sees the record before the visit.',track:['rash','Log a rash'],
+  eps:[['How to take a clear photo of a rash',3,'Dr Leo Fitzgerald'],['What to write down about a rash',4,'Dr Amelia Tran']]},
  {id:'adhd',title:'ADHD care',ages:[4,18],ico:'people',blurb:'A paediatrician sets the plan. Your GP does the regular visits.',link:['#adhd-care','See how it works'],
   eps:[['Shared care in three steps',3,'Dr Amelia Tran'],['What happens at the first visit',5,'Dr Mateo Alvarez']]}];
 /* Find care in the family's own words: a keyword pass that fills in the form. No model call, nothing interpreted. */
@@ -160,13 +173,13 @@ function match(q){
 }
 
 const ICO=p=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
-const I={people:ICO('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c3 .3 5.5 2.7 5.5 5.8"/>'),eye:ICO('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),moon:ICO('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),pulse:ICO('<path d="M2 12h4l2-6 4 12 3-9 2 3h5"/>'),flag:ICO('<path d="M5 21V4h11l-2 4 2 4H5"/>'),pill:ICO('<rect x="3" y="8" width="18" height="8" rx="4"/><path d="M12 8v8"/>'),ask:ICO('<path d="M4 5h16v11H9l-5 4z"/>'),tick:ICO('<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>'),home:ICO('<path d="M4 11l8-7 8 7v9H4z"/>'),cal:ICO('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'),chart:ICO('<path d="M2 20h20M5 20V10M11 20V4M17 20v-7"/>'),folder:ICO('<path d="M3 6h7l2 3h9v10H3z"/>'),book:ICO('<path d="M12 6c-2-1.6-5-2-8-1.5v13c3-.5 6-.1 8 1.5 2-1.6 5-2 8-1.5v-13c-3-.5-6-.1-8 1.5zM12 6v13"/>'),play:ICO('<path d="M8 5l11 7-11 7z" fill="currentColor"/>'),pause:ICO('<path d="M8 5v14M16 5v14"/>'),mic:ICO('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),bowl:ICO('<path d="M3 11h18a9 9 0 0 1-18 0zM12 3v5M8 5v3M16 5v3"/>'),bottle:ICO('<path d="M9 3h6v3l2 3v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9l2-3zM7 13h10"/>')};
+const I={people:ICO('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c3 .3 5.5 2.7 5.5 5.8"/>'),eye:ICO('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),moon:ICO('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),pulse:ICO('<path d="M2 12h4l2-6 4 12 3-9 2 3h5"/>'),flag:ICO('<path d="M5 21V4h11l-2 4 2 4H5"/>'),pill:ICO('<rect x="3" y="8" width="18" height="8" rx="4"/><path d="M12 8v8"/>'),ask:ICO('<path d="M4 5h16v11H9l-5 4z"/>'),tick:ICO('<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>'),home:ICO('<path d="M4 11l8-7 8 7v9H4z"/>'),cal:ICO('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'),chart:ICO('<path d="M2 20h20M5 20V10M11 20V4M17 20v-7"/>'),folder:ICO('<path d="M3 6h7l2 3h9v10H3z"/>'),book:ICO('<path d="M12 6c-2-1.6-5-2-8-1.5v13c3-.5 6-.1 8 1.5 2-1.6 5-2 8-1.5v-13c-3-.5-6-.1-8 1.5zM12 6v13"/>'),play:ICO('<path d="M8 5l11 7-11 7z" fill="currentColor"/>'),pause:ICO('<path d="M8 5v14M16 5v14"/>'),mic:ICO('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),bowl:ICO('<path d="M3 11h18a9 9 0 0 1-18 0zM12 3v5M8 5v3M16 5v3"/>'),bottle:ICO('<path d="M9 3h6v3l2 3v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9l2-3zM7 13h10"/>'),spots:ICO('<path d="M12 3c4 4.500 6 7.600 6 10.500a6 6 0 0 1-12 0C6 10.600 8 7.500 12 3z"/><circle cx="10" cy="13" r=".9"/><circle cx="14" cy="12" r=".9"/><circle cx="12.500" cy="16" r=".9"/>')};
 const PIP_SVG='<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="36" rx="14" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><path d="M13 18h6l2-4 3 7 2-3h9" fill="none" stroke="var(--sun)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="29" r="2.6" fill="var(--ink)"/><circle cx="30" cy="29" r="2.6" fill="var(--ink)"/><path d="M19 35q5 4 10 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/></svg>';
 const PATH=['Referral','Paediatrician','Tests','Plan','Follow-up'];
 const view=()=>{const h=location.hash.slice(1);return VIEWS[h]?h:'family';};
 
 const JOURNEY=[[0,'Birth','First vaccine, given in hospital'],[2,'2 months','Vaccines'],[4,'4 months','Vaccines'],[6,'6 months','Vaccines and growth check'],[12,'12 months','Vaccines and growth check'],[18,'18 months','Vaccines and growth check'],[30,'2½ to 3½ years','Growth check'],[48,'4 years','Vaccines before school'],[48,'4 to 5 years','Growth check before school'],[144,'Year 7','Vaccines at school'],[168,'Year 10','Vaccine at school']];
-const MONTHS={mia:50,arjun:108,zoe:156};
+const MONTHS={mia:50,arjun:108,zoe:156,ivy:10};
 function journeyRows(id){
   const m=MONTHS[id],rows=JOURNEY.map((j,i)=>({k:id+'-'+i,mo:j[0],when:j[1],what:j[2]}));
   if(m<60)rows.push({k:id+'-flu',mo:m,when:'Every year until age 5',what:'Flu vaccine'});
@@ -213,8 +226,28 @@ function testCard(t,id){const i=TINFO[t.type],[st,cl]=tstatus(t);
 const GROW={mia:{age:4.17,rows:[[2.04,78.8,85.4,91.9],[2.54,83.3,90.3,97.5],[3.04,86.9,94.2,101.8],[3.54,90.0,97.6,105.7],[4.04,93.1,101.0,109.5],[4.54,96.2,104.5,113.4],[5.04,99.4,108.0,117.4],[5.54,102.6,111.5,121.3],[6.04,105.8,115.0,125.3]]},
   arjun:{age:9.1,rows:[[6.04,106.1,115.7,125.1],[7.04,111.9,122.0,132.3],[8.04,117.5,128.1,139.3],[9.04,122.4,133.7,145.7],[10.04,126.7,138.8,151.5],[11.04,130.8,143.7,157.3]]},
   zoe:{age:13,rows:[[10.04,126.0,138.2,151.3],[11.04,130.7,144.3,158.1],[12.04,137.4,151.5,165.2],[13.04,144.2,157.3,170.2],[14.04,148.1,160.5,172.9],[15.04,149.7,161.9,174.2]]}};
-const HIST={mia:[0,0,0,0,0,0,0,0],arjun:[3,2,2,1,0,1,0,0],zoe:[0,0,0,0,0,0,0,0]};
-const SLEEPH={mia:[10,11,10.5,9.5,10,11],arjun:[9,9.5,8.5,9,10,9.5],zoe:[8,7.5,8.5,7,8,9]};
+const HIST={mia:[0,0,0,0,0,0,0,0],arjun:[3,2,2,1,0,1,0,0],zoe:[0,0,0,0,0,0,0,0],ivy:[0,0,0,0,0,0,0,0]};
+const SLEEPH={mia:[10,11,10.5,9.5,10,11],arjun:[9,9.5,8.5,9,10,9.5],zoe:[8,7.5,8.5,7,8,9],ivy:[11,10.5,11.5,10,11,10.5]};
+const FEEDH={mia:[0,0,0,0,0,0],arjun:[0,0,0,0,0,0],zoe:[0,0,0,0,0,0],ivy:[7,6,7,8,6,7]};
+const baby=id=>AGE[id]<2,ageLab=id=>AGE[id]<1?MONTHS[id]+' mo':AGE[id]+' y';
+const FTYPES=id=>baby(id)?['Breast','Bottle','Solids']:['Meal','Snack','Drink'],feedType=id=>FTYPES(id).includes(state.feedType)?state.feedType:FTYPES(id)[0];
+const RWHERE=id=>['Face','Chest or tummy','Back','Arms','Legs',AGE[id]<3?'Nappy area':'Hands or feet'];
+const todays=a=>a.filter(x=>x.date===TODAY);
+function chartFeeds(id){
+  const c=FEEDH[id].concat([todays(state.feeds[id]).length]),mx=Math.max(4,...c),x0=34,x1=308,y0=18,y1=128,bw=(x1-x0)/7,Y=v=>y1-v/mx*(y1-y0),ticks=[];
+  for(let v=0;v<=mx;v+=mx>5?2:1)ticks.push(v);
+  return `<svg viewBox="0 0 320 152" width="100%" style="max-width:460px" role="img" aria-label="${baby(id)?'Feeds':'Meals and snacks'} logged each day for 7 days, oldest first: ${c.join(', ')}">
+    ${ticks.map(v=>`<line x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${x0-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`).join('')}
+    ${c.map((v,i)=>`<rect x="${(x0+i*bw+6).toFixed(1)}" y="${Y(v)}" width="${(bw-12).toFixed(1)}" height="${y1-Y(v)}" rx="3" fill="var(--accent)"/>${v?`<text x="${(x0+i*bw+bw/2).toFixed(1)}" y="${Y(v)-4}" text-anchor="middle" style="fill:var(--ink);font-weight:600">${v}</text>`:''}`).join('')}
+    ${c.map((_,i)=>`<text x="${(x0+i*bw+bw/2).toFixed(1)}" y="146" text-anchor="middle">${i===6?'Today':DOW[dt(addDays(TODAY,i-6)).getUTCDay()]}</text>`).join('')}</svg>`;
+}
+/* Today so far: every feed, nap and rash logged today, newest first. A record, in the family's words. */
+function dayLog(id){
+  const rows=[...todays(state.feeds[id]).map(x=>[x.m,x.time,x.type==='Breast'?'Breastfeed':x.type,x.detail,'a']),...todays(state.naps[id]).map(x=>[x.m,x.time,'Nap',x.h+(x.h===1?' hour':' hours'),'c']),...todays(state.rashes[id]).map(x=>[x.m,x.time,'Rash',x.where.join(', ')+(x.photo?', photo':''),'b'])].sort((a,b)=>b[0]-a[0]);
+  if(!rows.length)return '';
+  return `<section class="panel"><div class="row"><h2>Today so far</h2><span class="sub">${plural(rows.length,'entry')}</span></div>
+    <ul class="daylog">${rows.slice(0,6).map(r=>`<li><time>${esc(r[1])}</time><i class="dl ${r[4]}" aria-hidden="true"></i><div class="txt"><b>${esc(r[2])}</b><span class="sub">${esc(r[3])}</span></div></li>`).join('')}</ul>${rows.length>6?`<p class="sub">And ${rows.length-6} earlier.</p>`:''}</section>`;
+}
 const MARK={arjun:{i:2,label:'Dose changed'}};
 const evName=id=>id==='zoe'?'Heart feelings':'Funny turns';
 function weekly(id){const c=HIST[id].slice();state.notes[id].forEach(x=>{if(id==='zoe'||x.cat==='Funny turn'){const w=Math.floor(days(TODAY,x.date)/7);if(w>=0&&w<8)c[7-w]++;}});return c;}
@@ -250,12 +283,13 @@ function chartHeight(id){
     ${xt.map(a=>`<text x="${X(a).toFixed(1)}" y="146" text-anchor="middle">${a} y</text>`).join('')}</svg>`;
 }
 function chartsPanel(id){
-  const c=state.chart[id]||'turns',n=weekly(id).slice(4).reduce((a,b)=>a+b,0);
-  const svg={turns:chartTurns,sleep:chartSleep,height:chartHeight}[c](id);
-  const cap={turns:`${n} in the last 4 weeks. Every note you add shows up here.`,sleep:'Hours each night for the last week.',height:'Grey lines are the CDC growth chart, widely used in Australia from age 2: the 3rd, 50th and 97th lines. Your doctor reads the chart.'}[c];
-  const add=c==='turns'?`<div><button type="button" class="primary" data-act="quick-jump" data-kind="note">Add one</button></div>`
+  const tabs=[];if(state.kids[id].ev!==false)tabs.push(['turns',evName(id)]);tabs.push(['sleep','Sleep'],['feeds',baby(id)?'Feeding':'Eating']);if(GROW[id])tabs.push(['height','Height']);
+  const c=tabs.some(t=>t[0]===state.chart[id])?state.chart[id]:tabs[0][0],nf=todays(state.feeds[id]).length;
+  const svg={turns:chartTurns,sleep:chartSleep,feeds:chartFeeds,height:chartHeight}[c](id);
+  const cap={turns:()=>`${weekly(id).slice(4).reduce((a,b)=>a+b,0)} in the last 4 weeks. Every note you add shows up here.`,sleep:()=>'Hours each night for the last week.',feeds:()=>`${nf} logged today. Each one you log shows up here.`,height:()=>'Grey lines are the CDC growth chart, widely used in Australia from age 2: the 3rd, 50th and 97th lines. Your doctor reads the chart.'}[c]();
+  const add=c==='turns'||c==='feeds'?`<div><button type="button" class="primary" data-act="quick-jump" data-kind="${c==='feeds'?'feed':'note'}">Add one</button></div>`
     :`<form id="chart-form" class="rowform"><div class="field" style="flex:1;min-width:0"><label for="chart-val">${c==='sleep'?'Hours last night':'Height today, in cm'}</label><input type="number" id="chart-val" step="0.5" min="0" max="${c==='sleep'?16:210}"></div><button class="primary" type="submit">Plot it</button></form>`;
-  return `<section class="panel"><div class="row"><h2>Charts</h2><div class="seg" role="group" aria-label="Chart">${[['turns',evName(id)],['sleep','Sleep'],['height','Height']].map(([k,l])=>`<button type="button" data-act="chart" data-c="${k}" aria-pressed="${k===c}">${l}</button>`).join('')}</div></div>
+  return `<section class="panel"><div class="row"><h2>Charts</h2><div class="seg" role="group" aria-label="Chart">${tabs.map(([k,l])=>`<button type="button" data-act="chart" data-c="${k}" aria-pressed="${k===c}">${l}</button>`).join('')}</div></div>
     <div class="scroll">${svg}</div><p class="sub">${cap}</p>${add}</section>`;
 }
 
@@ -281,24 +315,39 @@ function family(){
         <div class="field"><label for="quick-input">${id==='zoe'?'What did you feel?':'What did you notice?'}</label><input type="text" id="quick-input" maxlength="140" placeholder="In your own words"></div>
         <label class="check"><input type="checkbox" id="quick-video"><span>I have a video of it</span></label>`,
       win:`<div class="field"><label for="quick-input">${id==='zoe'?'What went well today?':'What can '+k.name+' do now?'}</label><input type="text" id="quick-input" maxlength="140"></div>`,
-      sleep:`<div class="field"><label for="quick-input">Hours slept last night</label><input type="number" id="quick-input" min="0" max="16" step="0.5"></div>`,
+      sleep:`<div class="cpills">${['Last night','Nap'].map((c,i)=>`<label class="cpill"><input type="radio" name="skind" id="sk-${i}" value="${c}"${i===0?' checked':''}>${c}</label>`).join('')}</div>
+        <div class="field"><label for="quick-input">Hours slept</label><input type="number" id="quick-input" min="0" max="16" step="0.5"></div>`,
+      feed:(ft=>`<div class="cpills">${FTYPES(id).map((c,i)=>`<label class="cpill"><input type="radio" name="ftype" id="ft-${i}" value="${c}"${c===ft?' checked':''}>${c}</label>`).join('')}</div>
+        ${ft==='Breast'?`<div class="cpills" role="group" aria-label="Side">${['Left','Right','Both'].map((c,i)=>`<label class="cpill"><input type="radio" name="fside" id="fs-${i}" value="${c}"${i===0?' checked':''}>${c}</label>`).join('')}</div>
+          <div class="field"><label for="quick-input">Minutes</label><input type="number" id="quick-input" min="1" max="90"></div>`
+        :ft==='Bottle'?`<div class="field"><label for="quick-input">How much, in mL</label><input type="number" id="quick-input" min="5" max="400" step="5"></div>`
+        :`<div class="field"><label for="quick-input">What did ${k.name} have?</label><input type="text" id="quick-input" maxlength="140" placeholder="In your own words"></div>`}`)(feedType(id)),
+      rash:`<div class="field"><span class="lab" id="rw-lab">Where is it?</span><div class="cpills" role="group" aria-labelledby="rw-lab">${RWHERE(id).map((c,i)=>`<label class="cpill"><input type="checkbox" name="rwhere" id="rw-${i}" value="${c}">${c}</label>`).join('')}</div></div>
+        <div class="field"><label for="quick-input">What does it look like?</label><input type="text" id="quick-input" maxlength="140" placeholder="In your own words"></div>
+        <label class="check"><input type="checkbox" id="quick-photo"><span>I have a photo of it</span></label>
+        <p class="foot">The app keeps the record for ${k.doc}. It cannot tell you what a rash is. If ${k.name} seems very unwell, call 000. For advice from a nurse in Queensland, call 13 HEALTH (13 43 25 84).</p>`,
       question:`<div class="field"><label for="quick-input">Your question for ${k.doc}</label><input type="text" id="quick-input" maxlength="140"></div>`}[Q];
     const qform=qbody?`<form class="panel" id="quick-form">${qbody}<div class="row" style="justify-content:flex-start"><button class="primary" type="submit">Save</button><button type="button" data-act="quick-open" data-kind="${Q}">Cancel</button></div></form>`:'';
     const tile=(cls,kind,ico,label,sub)=>`<button type="button" class="qt ${cls}" data-act="quick-open" data-kind="${kind}" aria-expanded="${Q===kind}">${ico}<b>${label}</b><span>${sub}</span></button>`;
     const T={note:c=>tile(c,'note',I.eye,id==='zoe'?'I felt it':id==='arjun'?'Funny turn':'I noticed',plural(r.n.length,'note')),
       win:c=>tile(c,'win',I.flag,id==='zoe'?'Good thing':'New skill',plural(r.w.length,'win')),
       med:c=>`<button type="button" class="qt ${c}" data-act="quick-toggle" aria-pressed="${did}">${I.pill}<b>Medicine</b><span>${did?'Given today':'Tap when given'}</span></button>`,
-      sleep:c=>tile(c,'sleep',I.moon,'Sleep',slept!=null?slept+' hours':'Tap to log'),
+      sleep:c=>tile(c,'sleep',I.moon,'Sleep',slept!=null?(todays(state.naps[id]).length?slept+' h · '+plural(todays(state.naps[id]).length,'nap'):slept+' h last night'):'Tap to log'),
+      feed:c=>tile(c,'feed',baby(id)?I.bottle:I.bowl,baby(id)?'Feeding':'Eating',todays(state.feeds[id]).length?todays(state.feeds[id]).length+' today':'Tap to log'),
+      rash:c=>tile(c,'rash',I.spots,'Rash',state.rashes[id].length?plural(state.rashes[id].length,'entry'):'Tap to log'),
       question:c=>tile(c,'question',I.ask,'Ask doctor',r.q.length+' saved')};
     body=`${live?monitorCard(live,id):''}${next}
       <section class="panel"><div class="row"><h2>Today</h2><span class="sub">${stars} of ${td.length} done</span></div>
         <div class="stack" style="gap:10px">${td.map((x,i)=>`<label class="check"><input type="checkbox" id="todo-${id}-${i}" data-todo="${i}"${x[1]?' checked':''}><span>${esc(x[0])}</span></label>`).join('')}</div></section>
-      <div class="quick">${k.tiles.map((t,i)=>T[t](['a','b','c','d'][i])).join('')}</div>${qform}`;
+      <div class="quick">${k.tiles.map((t,i)=>T[t](['a','b','c','d','e','f'][i])).join('')}</div>${qform}${dayLog(id)}`;
   }else if(tab==='notes'){
     body=`<section class="panel hero"><div class="row"><span class="lab">What ${k.doc} will see</span><span class="chip ${sent?'good':''}">${sent?'Sent':r.weeks+' weeks of notes'}</span></div>
-      <p>${plural(r.n.length,'note')}, ${plural(r.w.length,'win')}${r.vids?', '+plural(r.vids,'video'):''}${slept!=null?', sleep '+slept+' h':''}, ${plural(r.q.length,'question')}.</p>
+      <p>${plural(r.n.length,'note')}, ${plural(r.w.length,'win')}${r.vids?', '+plural(r.vids,'video'):''}${slept!=null?', sleep '+slept+' h':''}${todays(state.feeds[id]).length?', '+plural(todays(state.feeds[id]).length,baby(id)?'feed':'meal')+' today':''}${state.rashes[id].length?', '+plural(state.rashes[id].length,'rash entry'):''}, ${plural(r.q.length,'question')}.</p>
       <div><button type="button" class="primary" data-act="send-rec"${sent?' disabled':''}>${sent?'Sent to '+k.doc:'Send to '+k.doc}</button></div></section>
     ${chartsPanel(id)}
+    ${state.rashes[id].length?`<section class="panel"><div class="row"><h2>Rashes</h2><button type="button" data-act="quick-jump" data-kind="rash">Add</button></div>
+      <ul class="list">${state.rashes[id].map(x=>`<li><div class="txt"><b>${esc(x.text)}</b><div class="sub">${fmt(x.date)}${x.time?', '+esc(x.time):''} · ${esc(x.where.join(', '))}</div></div>${x.photo?'<span class="chip">Photo</span>':''}</li>`).join('')}</ul>
+      <p class="foot">Photos go to ${k.doc} with your notes. The app does not read them.</p></section>`:''}
     <section class="panel"><div class="row"><h2>What we noticed</h2><button type="button" data-act="quick-jump" data-kind="note">Add</button></div>
       ${r.n.length?`<ul class="list">${r.n.map(x=>`<li><div class="txt"><b>${esc(x.text)}</b><div class="sub">${fmt(x.date)}</div></div><span class="chip quiet">${esc(x.cat)}</span>${x.video?'<span class="chip">Video</span>':''}</li>`).join('')}</ul>`:'<p class="sub">Nothing yet. Tap Add when you notice something.</p>'}</section>
     <section class="panel"><div class="row"><h2>Wins</h2><button type="button" data-act="quick-jump" data-kind="win">Add</button></div>
@@ -317,7 +366,7 @@ function family(){
     body=`<p class="sub">Short listens from the PaedsMe team, picked for ${k.name}'s age. General information, not advice about ${k.name}.</p>
       ${list.map((t,ti)=>{const on=open===t.id;return `<section class="panel topic" style="--s:var(--${tint[ti%5]}-soft)"><button type="button" class="th" data-act="learn-open" data-id="${t.id}" aria-expanded="${on}"><span class="ti" aria-hidden="true">${I[t.ico]}</span><span class="txt"><b>${t.title}</b><span class="sub">${plural(t.eps.length,'short listen')}${fit(t)?'':' · for other ages'}</span></span><span class="chev" aria-hidden="true">›</span></button>
         ${on?`<div class="tb"><p>${t.blurb}</p><ul class="eps">${t.eps.map((e,i)=>{const pid=t.id+'-'+i,pl=state.playing===pid;return `<li><button type="button" class="play" data-act="play" data-ep="${pid}" aria-pressed="${pl}" aria-label="${pl?'Pause':'Play'}: ${esc(e[0])}">${pl?I.pause:I.play}</button><div class="txt"><b>${esc(e[0])}</b><span class="sub">${pl?'Playing a sample':e[1]+' min'} · ${esc(e[2])}</span>${pl?'<div class="prog"><i></i></div>':''}</div></li>`;}).join('')}</ul>
-          <div>${t.link?`<a class="btn" href="${t.link[0]}">${t.link[1]}</a>`:`<button type="button" data-act="${t.track[0]==='height'?'learn-chart':'quick-jump'}" data-kind="${t.track[0]}"${t.track[2]?` data-cat="${t.track[2]}"`:''}>${t.track[1]}</button>`}</div></div>`:''}</section>`;}).join('')}
+          <div>${t.link?`<a class="btn" href="${t.link[0]}">${t.link[1]}</a>`:t.track[0]==='height'&&!GROW[id]?'':`<button type="button" data-act="${t.track[0]==='height'?'learn-chart':'quick-jump'}" data-kind="${t.track[0]}"${t.track[2]?` data-cat="${t.track[2]}"`:''}>${t.track[1]}</button>`}</div></div>`:''}</section>`;}).join('')}
       <form class="panel" id="ask-form"><div class="field"><label for="ask-input">A question for the next Q&amp;A</label><input type="text" id="ask-input" maxlength="140" placeholder="General questions only"></div><div><button class="primary" type="submit">Send</button></div>${state.asked.length?`<p class="sub">${plural(state.asked.length,'question')} sent.</p>`:''}</form>
       <p class="foot">Every listen is a draft until a paediatrician signs it off. The audio is a sample in this prototype.</p>`;
   }else{
@@ -511,7 +560,7 @@ function parentSummary(){
 }
 function carePanel(){
   return `<section class="panel"><h2>Ongoing care</h2><ul class="list">${Object.entries(state.kids).map(([id,k])=>{const r=record(id),ap=state.appts.filter(a=>a.kid===id).sort((a,b)=>a.date<b.date?-1:1)[0],open=state.studies.filter(x=>x.kid===id&&x.s<6).length;
-    return `<li><div class="txt"><b>Child, ${AGE[id]} y</b> <span class="sub">${k.prog}</span><div class="sub">${plural(r.n.length,'note')} · ${open?plural(open,'test')+' open':'all tests reported'}${id==='arjun'?' · medicine '+(state.todo.arjun[0][1]?'logged today':'not logged today'):''}</div></div><span class="chip quiet">${ap?'Next '+fmt(ap.date).slice(4,-5):'No visit booked'}</span></li>`;}).join('')}</ul>
+    return `<li><div class="txt"><b>Child, ${ageLab(id)}</b> <span class="sub">${k.prog}</span><div class="sub">${plural(r.n.length,'note')}${todays(state.feeds[id]).length?' · '+plural(todays(state.feeds[id]).length,'feed')+' logged today':''}${state.rashes[id].length?' · '+plural(state.rashes[id].length,'rash entry'):''} · ${open?plural(open,'test')+' open':'all tests reported'}${id==='arjun'?' · medicine '+(state.todo.arjun[0][1]?'logged today':'not logged today'):''}</div></div><span class="chip quiet">${ap?'Next '+fmt(ap.date).slice(4,-5):'No visit booked'}</span></li>`;}).join('')}</ul>
     <p class="foot">Each row updates as the family logs and as tests move.</p></section>`;
 }
 function clinic(){
@@ -658,6 +707,7 @@ document.addEventListener('change',e=>{
   if(t.dataset.prep){state.prepDone[t.dataset.prep]=t.checked;state.prepOpen=true;render();return;}
   if(t.dataset.ms){state.milestones[+t.dataset.ms][1]=t.checked;render();return;}
   if(t.id==='cm-complex'){state.cm.complex=t.checked;render();return;}
+  if(t.name==='ftype'){state.feedType=t.value;render();return;}
   if(t.id==='q-said'){state.q.said=t.value;return;}
   const num=(v,mx=18)=>Math.min(mx,Math.max(0,parseInt(v,10)||0));
   if(t.closest('#find-form')){const q=state.q,g=i=>document.getElementById(i);q.said=g('q-said').value;q.age=num(g('q-age').value,30);q.region=g('q-region').value;q.concern=g('q-concern').value;q.lang=g('q-lang').value;q.culture=g('q-culture').value;q.lived=g('q-lived').checked;q.tele=g('q-tele').checked;q.ref=g('q-ref').checked;q.heard=[];render();}
@@ -665,7 +715,7 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('submit',e=>{
   e.preventDefault();
-  if(e.target.id==='chart-form'){const id=state.child,c=state.chart[id],v=parseFloat($('chart-val').value);
+  if(e.target.id==='chart-form'){const id=state.child,c=state.chart[id]==='height'&&GROW[id]?'height':'sleep',v=parseFloat($('chart-val').value);
     if(!(v>0)){toast('Type a number first');return;}
     if(c==='sleep')state.sleep[id]=Math.min(16,v);
     else{if(v<40||v>210){toast('Height is in centimetres, for example 103');return;}const h=state.heights[id],a=GROW[id].age;if(h[h.length-1][0]===a)h[h.length-1][1]=v;else h.push([a,v]);}
@@ -674,7 +724,13 @@ document.addEventListener('submit',e=>{
     if(mode==='note'&&!pl){toast('Write a note for the family first');return;}
     t.result={finding:f,mode,plain:pl,date:TODAY};t.s=6;toast('Released to the family and the referrer');render();return;}
   if(e.target.id==='quick-form'){const v=$('quick-input').value.trim(),id=state.child;if(!v){toast('Add something first');return;}
-    if(state.quick==='sleep'){state.sleep[id]=Math.min(16,Math.max(0,parseFloat(v)||0));toast('Sleep logged');}
+    const now=new Date(),stamp={date:TODAY,m:now.getHours()*60+now.getMinutes(),time:now.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}).toLowerCase()},pick=n=>(document.querySelector('input[name="'+n+'"]:checked')||{}).value,doc=state.kids[id].doc;
+    if(state.quick==='sleep'){const h=Math.min(16,Math.max(0,parseFloat(v)||0)),nap=pick('skind')==='Nap';if(nap)state.naps[id].unshift({...stamp,h});else state.sleep[id]=h;state.sent[id]=false;toast(nap?'Nap logged':'Sleep logged');}
+    else if(state.quick==='feed'){const ft=feedType(id),side=pick('fside')||'Both',n=parseFloat(v)||0;
+      if((ft==='Breast'||ft==='Bottle')&&!(n>0)){toast('Type a number first');return;}
+      state.feeds[id].unshift({...stamp,type:ft,detail:ft==='Breast'?(side==='Both'?'Both sides':side+' side')+', '+n+' min':ft==='Bottle'?n+' mL':v.slice(0,140)});state.sent[id]=false;toast('Saved for '+doc);}
+    else if(state.quick==='rash'){const where=[...document.querySelectorAll('input[name="rwhere"]:checked')].map(x=>x.value);if(!where.length){toast('Tap where it is first');return;}
+      state.rashes[id].unshift({...stamp,where,text:v.slice(0,140),photo:$('quick-photo').checked});state.sent[id]=false;toast('Saved for '+doc);}
     else if(state.quick==='note'){const c=document.querySelector('input[name="cat"]:checked');state.notes[id].unshift({date:TODAY,cat:c?c.value:'Behaviour',text:v,video:$('quick-video').checked});state.sent[id]=false;toast('Saved for '+state.kids[id].doc);}
     else if(state.quick==='win'){state.wins[id].unshift(v);toast('Great!');}
     else{state.questions[id].push(v);toast('Saved for the visit');}
@@ -689,7 +745,7 @@ document.addEventListener('submit',e=>{
 
 /* ---------- Pip: the support agent. It reads app state, calls page tools, and every change waits on a confirm card. ---------- */
 const $=id=>document.getElementById(id);
-const AGE={mia:4,arjun:9,zoe:13};
+const AGE={mia:4,arjun:9,zoe:13,ivy:0};
 const pip={live:false,sample:null,tts:null,voice:false,busy:false,ctl:null,log:[],turns:[],greeted:false};
 const role=()=>{const v=location.hash.slice(1);return v==='gp-referral'?'gp':(v==='diagnostics'||v==='clinic')?'staff':'parent';};
 const ROLE={
@@ -736,7 +792,7 @@ function perform(a){
 
 function context(){
   const r=role(),id=state.child,k=state.kids[id];let snap;
-  if(r==='parent')snap={child:{name:k.name,age_years:AGE[id]},home_region:state.q.region,appointments:kidAppts().map(a=>({what:a.what,date:fmt(a.date),time:a.time,with:a.who,mode:a.mode,prep:a.prep})),gp_referral:{valid_until:fmt(k.refUntil),days_left:days(k.refUntil),renewal_requested:!!state.renew[id]},care_team:k.team,health_journey_due_now:journeyRows(id).due.map(x=>x.what+' ('+x.when+')'),care_program:k.prog,care_plan:k.plan,tests:kidTests(id).map(t=>({name:TINFO[t.type].name,status:tstatus(t)[0],when:twhen(t),doctors_note_to_family:t.s===6&&t.result.mode==='note'?t.result.plain:null,held_for_conversation:t.s===6&&t.result.mode==='discuss'})),doctor:k.doc,notes_for_doctor:{count:state.notes[id].length,sent:!!state.sent[id]}};
+  if(r==='parent')snap={child:{name:k.name,age:k.age},home_logs:{feeds_today:todays(state.feeds[id]).length,naps_today:todays(state.naps[id]).length,rash_entries:state.rashes[id].length},home_region:state.q.region,appointments:kidAppts().map(a=>({what:a.what,date:fmt(a.date),time:a.time,with:a.who,mode:a.mode,prep:a.prep})),gp_referral:{valid_until:fmt(k.refUntil),days_left:days(k.refUntil),renewal_requested:!!state.renew[id]},care_team:k.team,health_journey_due_now:journeyRows(id).due.map(x=>x.what+' ('+x.when+')'),care_program:k.prog,care_plan:k.plan,tests:kidTests(id).map(t=>({name:TINFO[t.type].name,status:tstatus(t)[0],when:twhen(t),doctors_note_to_family:t.s===6&&t.result.mode==='note'?t.result.plain:null,held_for_conversation:t.s===6&&t.result.mode==='discuss'})),doctor:k.doc,notes_for_doctor:{count:state.notes[id].length,sent:!!state.sent[id]}};
   else if(r==='gp')snap={referrals:state.refs.map(x=>({id:x.id,patient:'Child, '+x.age+' y',reason:label(x.concern),urgency:x.urgency,status:STEPS[x.step],booked_with:x.step>=2?x.to:null}))};
   else snap={reviews_due_not_booked:state.clinic.recalls.map(x=>({patient:x.c,group:x.g,due:fmt(x.due),days_overdue:Math.max(0,-days(x.due))})),referrals_expiring:state.clinic.expiring.map(x=>({patient:x.c,group:x.g,expires:fmt(x.until),days_left:days(x.until)})),freed_slots:state.clinic.slots,studies:state.studies.map(x=>({id:x.id,test:x.test,site:x.site,status:FLOW[x.s],days_since_referral:days(TODAY,x.ref),flag:x.s===0?x.flag||null:null}))};
   if(r==='parent')snap.adhd_shared_care={status:'proposed by the clinical lead, indicative, not a quote',who_leads:'under 17 a paediatrician, 17 to 24 an adolescent psychiatrist, 25 and over an adult psychiatrist',steps:['Paediatrician: assessment over two visits, with a pre-visit questionnaire','GP: regular visits and repeat scripts','Paediatrician: yearly review, sooner by video if the GP asks'],fees_before_medicare:{paediatrician_first:CARE.first[0],paediatrician_second:CARE.second[0],gp_visit:CARE.gp[0]},out_of_pocket:{paediatrician_first:CARE.first[1],paediatrician_second:CARE.second[1],gp_visit:CARE.gp[1]+' to '+CARE.gp[2]}};
@@ -754,6 +810,7 @@ Rules:
 - A referral to a private specialist does not need to name the doctor, and a GP referral usually lasts 12 months from the first specialist visit.
 - ADHD shared care fees are proposals from the clinical lead. When you mention them, say they are approximate and not a quote.
 - Parents' notes are a record for the clinician. Never say whether something a parent noticed is normal or worrying.
+- Feeding, sleep and rash logs are a record too. Never say what a rash is, or whether feeding or sleep is on track. Point to the Feeding, Sleep and Rash tiles on the Today screen to log them.
 - Test results: only repeat the doctor's note to the family, word for word. Never explain, interpret or guess a result. If a result is held for a conversation, say the doctor will go through it and offer to ask for an earlier call.
 - Use only the app state below. If you do not know, say so and offer a navigator call.
 - Reply in plain text with no markdown, under 70 words, warm and direct.
@@ -792,6 +849,7 @@ function scripted(text){
     return say('Fill in the form on this screen and the likely matches update as you go. I can also tell you where your referrals are up to.');
   }
   if(/result|test|eeg|ecg|monitor|brain wave|heart trace/.test(q)){const ts=kidTests(state.child);return say(ts.length?ts.map(t=>TINFO[t.type].name+': '+(t.s===6?(t.result.mode==='note'?sdoc(t)+' says: '+t.result.plain:'result ready. '+sdoc(t)+' will go through it with you.'):tstatus(t)[0].toLowerCase()+'. '+twhen(t))).join('\n\n'):'No tests are booked.');}
+  if(/rash|feed|bottle|breast|nap\b|solids/.test(q))return say(`Tap Feeding, Sleep or Rash on the Today screen to log it. ${k.doc} sees the record before the visit. I cannot say what a rash is, or whether feeding or sleep is on track. Your care team does that.`);
   if(/resched|move|change.*(appointment|time|date)|cancel/.test(q))return tryP({kind:'reschedule',appointment:''},'I can ask the clinic for new times. Confirm below.');
   if(/referral|renew|expir/.test(q)){const left=days(k.refUntil);return left<60?tryP({kind:'renew_referral'},`${k.name}'s referral ends ${fmt(k.refUntil)}, in ${left} days. I can ask your GP to renew it.`):say(`${k.name}'s referral is valid until ${fmt(k.refUntil)}, ${left} days from now. Nothing to do yet.`);}
   if(/prep|prepare|bring|ready/.test(q))return say(nx?`For ${nx.what} on ${fmt(nx.date)}:\n- ${nx.prep.join('\n- ')}`:'There is nothing booked to prepare for.');
@@ -852,6 +910,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)op
   renderPip();
 })();
 window.addEventListener('hashchange',()=>{render();renderPip();window.scrollTo(0,0);});
-function start(saved){if(saved&&saved.kids&&saved.todo)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};render();renderPip();}
+function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};render();renderPip();}
 window.claude?.hot?.snapshot?.(()=>state);
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});

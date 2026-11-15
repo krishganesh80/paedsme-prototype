@@ -506,3 +506,17 @@ button.cta:hover svg,a.cta:hover svg{transform:translateX(3px)}
   .cta-row>*{flex:1 1 auto}
 }
 .filter .two{grid-template-columns:86px minmax(0,1fr)}
+
+/* Family app: feeding, sleep and rash logs (16 Nov 2026). Six tiles, and the day's entries under them. */
+.qt.e{background:var(--lime);color:#263238}
+.qt.f{background:#4A5568;color:#fff}
+.daylog{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.daylog li{display:grid;grid-template-columns:70px 12px minmax(0,1fr);gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.daylog li:first-child{border-top:0;padding-top:0}
+.daylog time{font-size:.84rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.daylog .dl{width:12px;height:12px;border-radius:50%;background:var(--accent)}
+.daylog .dl.b{background:var(--orange)} .daylog .dl.c{background:var(--violet)}
+.daylog .txt{display:flex;flex-direction:column;min-width:0}
+.daylog b{font-size:1rem}
+.field .cpill{text-transform:none;letter-spacing:0;font-size:.92rem;font-weight:400;color:var(--ink)}
+.field .cpill:has(input:checked){font-weight:700}
