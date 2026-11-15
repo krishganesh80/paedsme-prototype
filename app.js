@@ -101,7 +101,7 @@ state.feedType=null;
 /* Demand for the app. The website comes first; the app is built only if families ask for it. Counts only: an email typed into the list is never kept. */
 state.wait={joined:false,platform:null,visits:1240,taps:{header:96,home:71,talk:45},joins:87,plat:{iPhone:52,Android:35},uses:{'Talking a worry through':63,'Notes for the doctor':57,'Feeding':41,'Sleep':48,'Rashes':33,'Finding care':38,'Videos and guides':22}};
 /* Talk it through: the conversation with Pip, the note being built, and the notes the parent has saved. */
-state.talk={log:[],step:0,draft:{},saved:[],seq:0};
+state.talk={log:[],step:0,draft:{},saved:[],seq:0,asked:{sleep:38,skin:44,feeding:29,nd:33,unwell:21,none:17}};
 const label=k=>CONCERNS.find(c=>c[0]===k)[1];
 const opts=(arr,v)=>arr.map(o=>{const[k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${k==v?' selected':''}>${esc(t)}</option>`;}).join('');
 const SEED=JSON.parse(JSON.stringify(state));
@@ -419,6 +419,7 @@ function learnView(){
        ${t.urgent?'<p class="note"><b>If your child is in danger, call 000.</b> For advice from a nurse in Queensland, call 13 HEALTH (13 43 25 84).</p>':''}
        <ul class="media">${t.items.map((e,i)=>{const pid=t.id+'-'+i,pl=state.playing===pid,vid=e[0]==='v';return `<li><button type="button" class="mcard" data-act="play" data-ep="${pid}" aria-pressed="${pl}" style="--s:var(--${TINT[(ti+i)%5]}-soft)"><span class="mth">${vid?(pl?I.pause:I.play):I.photos}<span class="dur">${vid?e[2]+' min':e[2]+' photos'}</span>${pl?'<span class="prog"><i></i></span>':''}</span><b>${esc(e[1])}</b><span class="sub">${pl?(vid?'Playing a sample':'Showing sample photos'):esc(e[3])}</span></button></li>`;}).join('')}</ul>
        <div class="row" style="justify-content:flex-start"><a class="btn primary" href="#talk">Tell Pip about it</a>${t.link?`<a class="btn" href="${t.link[0]}">${t.link[1]}</a>`:''}</div></section>
+      ${INFO.some(x=>x.topic===t.id)?`<section class="panel"><div class="row"><h2>Trusted reading</h2><span class="chip quiet">Opens another site</span></div><div class="reading">${INFO.filter(x=>x.topic===t.id).map(infoCard).join('')}</div><p class="foot">General information from Australian public health sources, checked ${INFO_CHECKED}. Not advice about your child.</p></section>`:''}
       <form class="panel" id="ask-form"><div class="field"><label for="ask-input">A question for the next Q&amp;A</label><input type="text" id="ask-input" maxlength="140" placeholder="General questions only"></div><div><button class="primary" type="submit">Send</button></div>${state.asked.length?`<p class="sub">${plural(state.asked.length,'question')} sent.</p>`:''}</form>
       <p class="foot">Short videos and photo guides from the PaedsMe team. General information, not advice about your child. Each one is a draft until a paediatrician signs it off, and the media here are samples.</p>`;
   return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Learn</span><h1>Short videos and photo guides</h1><p class="lead">Five topics to start. General information from the PaedsMe team, never advice about one child.</p></div></div></div>${sparks}</section>
@@ -486,7 +487,7 @@ function home(){
    </div></div></section>
   <section class="sec alt"><div class="wrap">${secHead('What Pip is','A companion for the worry, not a replacement for the doctor','You notice more than a visit has time for. Pip makes sure none of it is lost.')}
    <div class="grid2 eq">
-    <div class="wcard"><h3>Pip does</h3><ul class="ticks"><li>${TICK} Listens, for as long as you need</li><li>${TICK} Asks a few short questions so nothing is left out</li><li>${TICK} Writes a note in your own words</li><li>${TICK} Points you to a GP, a nurse line or a paediatrician</li></ul></div>
+    <div class="wcard"><h3>Pip does</h3><ul class="ticks"><li>${TICK} Listens, for as long as you need</li><li>${TICK} Asks a few short questions so nothing is left out</li><li>${TICK} Writes a note in your own words</li><li>${TICK} Shares general information from trusted Australian sources</li><li>${TICK} Points you to a GP, a nurse line or a paediatrician</li></ul></div>
     <div class="wcard"><h3>Pip never does</h3><ul class="ticks no"><li>Says what something is</li><li>Says whether it is normal</li><li>Advises on medicine or treatment</li><li>Decides how urgent it is. In an emergency, call 000.</li></ul></div>
    </div>
    <div class="cta-row center"><a class="btn primary cta" href="#talk">Talk it through ${ARROW}</a></div></div></section>
@@ -511,6 +512,28 @@ const CANNOT='I cannot tell you that, and I would not want to guess about your c
 const URGENT='If a child is in danger, call 000 now. For health advice from a nurse, call healthdirect on 1800 022 222, or in Queensland 13 HEALTH on 13 43 25 84. Pip cannot help with urgent medical problems.';
 const talkTopic=t=>{t=String(t).toLowerCase();return /sleep|wak|nap|bedtime|night/.test(t)?'sleep':/rash|skin|eczema|spots|itch/.test(t)?'skin':/feed|eat|bottle|breast|solids|food|milk/.test(t)?'feeding':/fever|temperature|sick|vomit|unwell|cough/.test(t)?'unwell':'nd';};
 const noteText=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>TALK_LAB[k]+': '+d[k]).join('\n');
+/* Health information (20 Nov 2026). Pip may answer a question with general information, and only by pointing to a page from a
+   trusted Australian publisher. Every page below was opened and checked on 15 Nov 2026. `covers` says what the page is about and
+   makes no clinical claim. Pip never writes health information itself: an answer in PaedsMe's own words needs a paediatrician to
+   write it and sign it off first (docs/09-pip-health-information.md). */
+const INFO=[
+ {id:"sleep-baby",topic:"sleep",rx:/sleep|wak|night|settl|nap/,by:"The Royal Children's Hospital Melbourne",title:"Sleep problems \u2013 babies and toddlers",url:"https://www.rch.org.au/kidsinfo/fact_sheets/Sleep_problems_babies_and_toddlers/",covers:"Covers how baby and toddler sleep works, differences by age and ways to build sleep habits."},
+ {id:"sleep-child",topic:"sleep",rx:/sleep|bedtime|night|nightmare/,by:"The Royal Children's Hospital Melbourne",title:"Sleep problems \u2013 children and teens",url:"https://www.rch.org.au/kidsinfo/fact_sheets/Sleep_problems_children_and_teens/",covers:"Covers sleep needs, bedtime routines, night-time worries and when to get help."},
+ {id:"skin-eczema",topic:"skin",rx:/eczema|dry skin|itch/,by:"The Royal Children's Hospital Melbourne",title:"Eczema (atopic dermatitis)",url:"https://www.rch.org.au/kidsinfo/fact_sheets/Eczema/",covers:"Covers what eczema is, how it is managed and when to see a doctor."},
+ {id:"skin-rash",topic:"skin",rx:/rash|spots|hives|skin/,by:"The Royal Children's Hospital Melbourne",title:"Rashes",url:"https://www.rch.org.au/kidsinfo/fact_sheets/Rashes/",covers:"Covers what rashes are, how they can look, care at home and when to get medical help."},
+ {id:"feeding-breast",topic:"feeding",rx:/breast|latch|feeding|feeds?\b|bottle/,by:"Pregnancy, Birth and Baby",title:"Common breastfeeding problems",url:"https://www.pregnancybirthbaby.org.au/womens-health/postnatal-health/common-breastfeeding-problems",covers:"Covers common breastfeeding problems for parent and baby, and where to get help."},
+ {id:"feeding-solids",topic:"feeding",rx:/solids|first foods?|wean/,by:"Pregnancy, Birth and Baby",title:"Introducing solid food",url:"https://www.pregnancybirthbaby.org.au/babies/feeding-and-nutrition/introducing-solid-food",covers:"Covers when and how to start solids, signs of readiness, first foods and textures."},
+ {id:"feeding-fussy",topic:"feeding",rx:/fussy|picky|won'?t eat|refus|meals?\b|eating/,by:"Pregnancy, Birth and Baby",title:"Fussy eating in toddlers and children",url:"https://www.pregnancybirthbaby.org.au/children/feeding-and-nutrition/fussy-eaters",covers:"Covers what fussy eating is, ways to respond, new foods and when to get help."},
+ {id:"dev-speech",topic:"nd",rx:/talk|speech|words|language|stutter/,by:"healthdirect",title:"Speech development in children",url:"https://www.healthdirect.gov.au/life-stages/babies-and-toddlers-health/speech-development-in-children",covers:"Covers how speech develops, how parents can support it and when to seek help."},
+ {id:"dev-adhd",topic:"nd",rx:/adhd|attention|hyperactiv|focus|concentrat/,by:"The Royal Children's Hospital Melbourne",title:"Attention deficit hyperactivity disorder (ADHD)",url:"https://www.rch.org.au/kidsinfo/fact_sheets/Attention_deficit_hyperactivity_disorder_ADHD/",covers:"Covers what ADHD is, its traits, how it is identified and support at home."},
+ {id:"dev-milestones",topic:"nd",rx:/milestone|development|crawl|walk|behind/,by:"healthdirect",title:"Developmental milestones in babies and children",url:"https://www.healthdirect.gov.au/life-stages/babies-and-toddlers-health/developmental-milestones",covers:"Covers what developmental milestones are, what they measure and when to see a doctor."},
+ {id:"unwell-fever",topic:"unwell",rx:/fever|temperature/,by:"The Royal Children's Hospital Melbourne",title:"Fever in children",url:"https://www.rch.org.au/kidsinfo/fact_sheets/Fever_in_children/",covers:"Covers what fever is, taking a temperature, care at home and when to get help."},
+ {id:"unwell-serious",topic:"unwell",rx:/sick|unwell|vomit|cough|lethargic|\bill\b/,by:"healthdirect",title:"Symptoms of serious illness in babies and children",url:"https://www.healthdirect.gov.au/symptoms/symptoms-of-serious-illness-in-babies-and-children",covers:"Covers when to call triple zero, illnesses needing urgent attention and when to see a doctor."}];
+const INFO_CHECKED='15 Nov 2026';
+const isQ=t=>/\?\s*$/.test(t)||/^\s*(how|what|why|when|should|is|are|can|could|does|do|will|who)\b/i.test(t)||ASKS.test(t);
+const infoFor=t=>{t=String(t).toLowerCase();return INFO.filter(x=>x.rx.test(t)).slice(0,2);};
+const infoCard=x=>`<a class="tinfo" href="${x.url}" target="_blank" rel="noopener"><span class="lab">${esc(x.by)}</span><b>${esc(x.title)}</b><span class="sub">${esc(x.covers)}</span><span class="more">Read it on ${x.url.split('/')[2].replace(/^www\./,'')} ${ARROW}</span></a>`;
+const infoCards=ids=>`<div class="tinfos">${ids.map(id=>INFO.find(x=>x.id===id)).filter(Boolean).map(infoCard).join('')}<p class="foot">General information, not advice about your child. Pages checked ${INFO_CHECKED}. Not yet reviewed by a PaedsMe paediatrician.</p></div>`;
 function talkSay(text,extra){state.talk.log.push(Object.assign({t:'pip',text},extra||{}));}
 function talkAsk(){const T=state.talk,q=TALK_Q[T.step-1];if(q)talkSay(q[1],{chips:q[2],n:T.step});}
 function talkSend(text){
@@ -518,7 +541,11 @@ function talkSend(text){
   T.log.forEach(m=>{delete m.chips;delete m.next;});T.log.push({t:'me',text});
   if(EMERG.test(text)){T.log.push({t:'alert',text:URGENT});return;}
   const mid=T.step>0&&T.step<=TALK_Q.length;
-  if(ASKS.test(text)&&(mid||text.length<60)){talkSay(CANNOT+(mid?'':' Tell me what you have noticed, in your own words.'));if(mid)talkAsk();return;}
+  if(isQ(text)&&(mid||text.length<120)){let hits=infoFor(text);if(!hits.length&&mid)hits=infoFor(T.draft.what||'');const tp=hits.length?hits[0].topic:'none';T.asked[tp]=(T.asked[tp]||0)+1;
+    if(hits.length)talkSay('I cannot tell you about your own child, and I am not a doctor. Here is general information from a trusted Australian source. A nurse can also talk it through with you now on 1800 022 222.',{info:hits.map(x=>x.id)});
+    else talkSay(CANNOT+(mid?'':' Tell me what you have noticed, in your own words.'));
+    if(mid)talkAsk();else if(hits.length)talkSay('If you would like, tell me what you have noticed and I will write it down in your words for your GP.');
+    return;}
   if(!mid){T.draft={what:text};T.step=1;talkSay('Thank you for telling me. I will ask five short questions so nothing gets lost, then write it down in your words.');talkAsk();return;}
   T.draft[TALK_Q[T.step-1][0]]=text;T.step++;
   if(T.step<=TALK_Q.length){talkAsk();return;}
@@ -533,7 +560,7 @@ function talkView(){
   const lines=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>`<div><dt>${TALK_LAB[k]}</dt><dd>${esc(d[k])}</dd></div>`).join('');
   const log=T.log.map((m,i)=>m.t==='note'
     ?`<div class="tnote"><span class="lab">Your note</span><dl>${lines(m.d)}</dl>${m.status==='pending'?`<div class="acts"><button type="button" class="primary" data-act="talk-save" data-i="${i}">Save this note</button><button type="button" data-act="talk-new">Start again</button></div>`:'<span class="chip good">Saved</span>'}</div>`
-    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
+    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
   const saved=T.saved.length?`<ul class="tsaved">${T.saved.map(n=>`<li><details><summary><b>${esc(n.d.what.length>70?n.d.what.slice(0,67)+'...':n.d.what)}</b><span class="sub">${fmt(n.date)}${n.d.age?' · '+esc(n.d.age):''}</span></summary><dl>${lines(n.d)}</dl></details><div class="acts"><button type="button" data-act="talk-gp" data-id="${n.id}">Copy for my GP</button><button type="button" data-act="talk-find" data-id="${n.id}">Find care with this</button></div></li>`).join('')}</ul>`
     :'<p class="sub">Nothing saved yet. A note you save with Pip appears here, ready to copy for your GP.</p>';
   return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Pip · AI companion · scripted demo</span><h1>Tell Pip what is worrying you</h1><p class="lead">Pip listens, helps you get it down clearly, and points you to the right person. Pip is not a doctor and never says what something is.</p></div></div></div>${sparks}</section>
@@ -829,6 +856,9 @@ function teamView(){
    <section class="panel"><div class="row"><h2>Engagement by category</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <ul class="eng">${rows.map(r=>`<li><span class="ti" style="--s:var(--${TINT[LEARN.indexOf(r.t)%5]}-soft)" aria-hidden="true">${I[r.t.ico]}</span><div class="txt"><div class="row"><b>${r.t.full}</b><span class="sub">${r.s.v} opens · ${r.s.p} plays · ${r.s.l} logs</span></div><div class="bar"><i style="width:${Math.round(100*r.n/mx)}%"></i></div></div></li>`).join('')}</ul>
     <p class="foot">Counts only. No child, parent or note is identified.</p></section>
+   <section class="panel"><div class="row"><h2>What parents ask Pip</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
+    <ul class="eng">${[...LEARN.map(t=>[t.full,state.talk.asked[t.id]||0,I[t.ico]]),['No trusted page yet',state.talk.asked.none||0,I.ask]].map((r,i,all)=>`<li><span class="ti" style="--s:var(--${TINT[i%5]}-soft)" aria-hidden="true">${r[2]}</span><div class="txt"><div class="row"><b>${r[0]}</b><span class="sub">${plural(r[1],'question')}</span></div><div class="bar"><i style="width:${Math.round(100*r[1]/Math.max(1,...all.map(x=>x[1])))}%"></i></div></div></li>`).join('')}</ul>
+    <p class="foot">Counts by topic only. The questions themselves are not kept. The last row is where a signed-off answer is most needed.</p></section>
    <section class="panel"><div class="row"><h2>Demand for the app</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <div class="kpis flat">${kpi('Site visits',w.visits.toLocaleString('en-AU'),'synthetic')}${kpi('Get the app taps',taps,Math.round(100*taps/w.visits)+'% of visits')}${kpi('Joined the list',w.joins,Math.round(100*w.joins/taps)+'% of taps')}${kpi('Most wanted',use[0],use[1]+' picks')}</div>
     <p class="sub">Taps by place: header ${w.taps.header}, home page ${w.taps.home}, Talk it through ${w.taps.talk}. Phones: iPhone ${w.plat.iPhone}, Android ${w.plat.Android}.</p>
@@ -901,6 +931,8 @@ document.addEventListener('click',e=>{
   else if(a==='talk-gp'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);if(!n)return;const t='For my GP, from a parent\n'+noteText(n.d);(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copied. Paste it into a message, or show it at the visit.'),()=>toast('Open the note under Your notes and show it at the visit.'));
     if(state.talk.log.some(m=>m.next)){state.talk.log.forEach(m=>{delete m.next;});talkSay('Copied for your GP. Paste it into a message or show it at the visit. If you would like a paediatrician, your GP writes the referral.');}}
   else if(a==='talk-find'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);if(!n)return;hear(n.d.what+(TALK_AGE[n.d.age]==null&&n.d.age?'. '+n.d.age:''));if(TALK_AGE[n.d.age]!=null)state.q.age=TALK_AGE[n.d.age];state.q.who='other';location.hash='find-care';return;}
+  else if(a==='talk-info'){const n=state.talk.saved.find(x=>x.id===b.dataset.id),hits=n?infoFor(n.d.what):[];state.talk.log.forEach(m=>{delete m.next;});
+    if(hits.length)talkSay('Here is general information from a trusted Australian source. It is not about your child, and your GP or a nurse can tell you more.',{info:hits.map(x=>x.id)});else talkSay('I do not have a trusted page on that yet. A nurse can talk it through with you on 1800 022 222.');}
   else if(a==='talk-learn'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);state.learnOpen=talkTopic(n?n.d.what:'');state.playing=null;location.hash='learn';return;}
   else if(a==='wait-reset'){state.wait.joined=false;}
   else if(a==='survey'){toast('The parent survey is not open yet. The link will sit here.');return;}
@@ -1132,6 +1164,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)op
 })();
 if(PARKED_ON){const n=document.querySelector('.tabs');if(n)n.insertAdjacentHTML('beforeend','<a href="#family">My family</a><a href="#gp-referral">GP referral</a><a href="#diagnostics">Diagnostics hub</a><a href="#clinic">Clinic tools</a>');}
 window.addEventListener('hashchange',()=>{render();renderPip();window.scrollTo(0,0);});
-function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};render();renderPip();}
+function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};render();renderPip();}
 window.claude?.hot?.snapshot?.(()=>state);
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
