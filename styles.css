@@ -570,3 +570,61 @@ button.cta:hover svg,a.cta:hover svg{transform:translateX(3px)}
 .cats{display:flex;gap:6px}
 .cats button{flex:1 0 auto;min-width:58px;padding:10px 6px 8px!important;font-size:.68rem}
 .cats button span:last-child{overflow:visible}
+
+/* One website (18 Nov 2026). The Family app is now pages of the site: My family sits in the same band and
+   sections as everything else, Learn is its own page, and the phone column and its bottom bar are gone. */
+body::after{display:none}
+body[data-view="family"] #view{padding:0}
+body[data-view="family"] .site-foot{display:block}
+.getapp{flex:none;min-height:44px;padding:9px 18px}
+@media (max-width:1240px){.getapp{margin-left:auto}.demo{margin-left:0}}
+@media (max-width:760px){.demo{display:none}}
+.subnav{display:inline-flex;flex-wrap:wrap;gap:4px;margin-top:22px;padding:4px;border-radius:26px;background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.subnav button{border:0;background:transparent;border-radius:999px;padding:10px 20px;min-height:44px;color:var(--ink)}
+.subnav button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.dash.fam>.wrap{margin-top:clamp(-76px,-6vw,-56px);position:relative;z-index:1}
+.app.fam-web{max-width:none;gap:24px}
+.fgrid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px;align-items:start}
+.fcol{display:flex;flex-direction:column;gap:20px;min-width:0}
+@media (max-width:900px){.fgrid{grid-template-columns:minmax(0,1fr)}}
+.fam-web .quick{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:520px){.fam-web .quick{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.fam-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:720px){.fam-cards{grid-template-columns:minmax(0,1fr)}}
+.nudge{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;background:var(--lime-soft);box-shadow:none}
+.nudge .txt{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 280px}
+/* Home, and the list for the app. */
+.trust.left{justify-content:flex-start}
+.preview{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:22px;display:flex;flex-direction:column;gap:16px}
+.preview .panel{box-shadow:none;padding:0;border-radius:0}
+.pv-head{display:flex;align-items:center;gap:12px}
+.pv-head div{display:flex;flex-direction:column}
+.pv-head b{font-family:var(--display);font-size:1.15rem}
+a.feat{text-decoration:none;color:var(--ink);transition:transform .15s,box-shadow .15s}
+a.feat:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.more{display:inline-flex;align-items:center;gap:6px;font-weight:700;margin-top:auto;color:var(--ink);text-decoration:none}
+a.more:hover{text-decoration:underline;text-underline-offset:4px}
+.dot svg{width:24px;height:24px}
+.loglist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.loglist li{display:flex;gap:14px;align-items:flex-start;background:var(--bg);border-radius:20px;padding:16px}
+.loglist div{display:flex;flex-direction:column;min-width:0}
+.loglist b{font-family:var(--display);font-size:1.05rem}
+@media (max-width:560px){.loglist{grid-template-columns:minmax(0,1fr)}}
+.band-side>.panel{border-radius:var(--r-lg);box-shadow:var(--shadow-lg);padding:clamp(20px,2.6vw,28px);gap:16px}
+.band-side>.panel h2{font-size:1.35rem}
+.kpis.flat{margin-top:0}
+.kpis.flat .kpi{background:var(--bg);box-shadow:none}
+@media (prefers-reduced-motion:reduce){a.feat:hover{transform:none}}
+/* Learn as a page: the same five buttons and media cards, at website size. */
+.learn .cats{gap:12px}
+.learn .cats button{font-size:.92rem;min-height:104px}
+.learn .cats .ci{width:46px;height:46px}
+.learn .media{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.learn #ask-form{max-width:680px}
+@media (max-width:900px){.learn .media{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+@media (max-width:620px){.learn .cats{gap:6px}.learn .cats button{font-size:.72rem;min-height:76px}.learn .cats .ci{width:38px;height:38px}}
+/* After the first look at the merged site. */
+input[type=email]{font:inherit;padding:10px 14px;border:2px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);width:100%;min-height:48px}
+@media (min-width:621px){.learn .cats button{flex:1 1 0}}
+@media (max-width:720px){.trust.left{align-items:flex-start}}
+@media (max-width:520px){.top .wrap{column-gap:8px}.getapp{padding:8px 12px;font-size:.84rem;min-height:40px}.subnav{display:flex;margin-top:18px}.subnav button{flex:1 1 auto;padding:10px 8px}}

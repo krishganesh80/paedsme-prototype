@@ -5,27 +5,27 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PaedsMe Prototype</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261117">
+<link rel="stylesheet" href="styles.css?v=20261118">
 </head>
 <body>
 <a class="skip" href="#view">Skip to content</a>
 <header class="top"><div class="wrap">
   <div class="brand"><span class="logo">Paeds<span>Me</span></span><span class="pill">Dev prototype</span></div>
-  <nav class="tabs" aria-label="Screens">
-    <a href="#family" class="tab-app"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg>Family app</a><a href="#find-care">Find care</a><a href="#adhd-care">ADHD care</a>
+  <nav class="tabs" aria-label="Site">
+    <a href="#home">Home</a><a href="#find-care">Find care</a><a href="#adhd-care">ADHD care</a><a href="#learn">Learn</a><a href="#family">My family</a>
   </nav>
+  <a class="btn primary getapp" href="#get-app" data-cta="header">Get the app</a>
   <span class="demo">Synthetic data · demo date 12 Nov 2026</span>
 </div></header>
 <main id="view" tabindex="-1"></main>
 <footer class="site-foot"><div class="wrap">
-  <div class="sf-brand"><span class="logo">Paeds<span>Me</span></span><p>Australian paediatric care coordination. Families record what they notice, clinicians read it before the visit, and brain and heart tests are booked and reported in one place.</p></div>
-  <nav aria-label="For families"><b>Families</b><a href="#family">Family app</a><a href="#find-care">Find care</a><a href="#adhd-care">ADHD care</a></nav>
-  <nav aria-label="For the team"><b>Prototype</b><a href="#team">Team view</a></nav>
+  <div class="sf-brand"><span class="logo">Paeds<span>Me</span></span><p>Australian paediatric care coordination. Families record what they notice, and clinicians read it before the visit.</p></div>
+  <nav aria-label="For families"><b>Families</b><a href="#home">Home</a><a href="#find-care">Find care</a><a href="#adhd-care">ADHD care</a><a href="#learn">Learn</a><a href="#family">My family</a></nav>
+  <nav aria-label="More"><b>More</b><a href="#get-app" data-cta="home">Get the app</a><a href="#team">Team view</a></nav>
   <p class="sf-note">PaedsMe checks each clinician's registration and training. It does not provide medical care and does not vouch for clinical outcomes. Draft wording, not yet reviewed by a lawyer.</p>
   <p class="sf-note">Dev prototype on synthetic data. Nothing here is medical advice. In an emergency call 000.</p>
 </div></footer>
 <div id="toast" role="status" aria-live="polite" hidden></div>
-<nav class="fnav" id="fnav" aria-label="Family app sections" hidden></nav>
 <button class="pip-fab" id="pip-open" type="button" aria-haspopup="dialog" aria-label="Ask Pip"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="36" rx="14" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><path d="M13 18h6l2-4 3 7 2-3h9" fill="none" stroke="var(--sun)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="29" r="2.6" fill="var(--ink)"/><circle cx="30" cy="29" r="2.6" fill="var(--ink)"/><path d="M19 35q5 4 10 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/></svg><span>Ask Pip</span></button>
 <section class="pip" id="pip" role="dialog" aria-label="Pip, the PaedsMe support assistant" hidden>
   <div class="pip-head"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="36" rx="14" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><path d="M13 18h6l2-4 3 7 2-3h9" fill="none" stroke="var(--sun)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="29" r="2.6" fill="var(--ink)"/><circle cx="30" cy="29" r="2.6" fill="var(--ink)"/><path d="M19 35q5 4 10 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/></svg><div class="who"><b>Pip</b> <span class="chip quiet" id="pip-mode">Scripted demo</span><div class="sub" id="pip-role"></div></div>
@@ -35,6 +35,6 @@
   <form class="pip-form" id="pip-form"><input type="text" id="pip-input" placeholder="Ask about bookings, referrals, tests" maxlength="300" autocomplete="off" aria-label="Message Pip"><button class="primary" type="submit" id="pip-send">Send</button><button type="button" id="pip-stop" hidden>Stop</button></form>
   <p class="pip-note">Pip is an AI assistant for bookings and admin. It cannot give medical advice. In an emergency call 000.</p>
 </section>
-<script src="app.js?v=20261117b"></script>
+<script src="app.js?v=20261118"></script>
 </body>
 </html>
