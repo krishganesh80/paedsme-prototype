@@ -628,3 +628,49 @@ input[type=email]{font:inherit;padding:10px 14px;border:2px solid var(--line);bo
 @media (min-width:621px){.learn .cats button{flex:1 1 0}}
 @media (max-width:720px){.trust.left{align-items:flex-start}}
 @media (max-width:520px){.top .wrap{column-gap:8px}.getapp{padding:8px 12px;font-size:.84rem;min-height:40px}.subnav{display:flex;margin-top:18px}.subnav button{flex:1 1 auto;padding:10px 8px}}
+
+/* Talk it through (19 Nov 2026): the conversation with Pip, as a page. My family is parked. */
+body[data-view="talk"] .pip-fab,body[data-view="talk"] .pip{display:none!important}
+.talk{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.talk{grid-template-columns:minmax(0,1fr)}}
+.dash .panel.chat{padding:0;gap:0;overflow:hidden}
+.chat-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.chat-head svg,.pv-head svg{width:44px;height:44px;flex:none}
+.chat-head div{display:flex;flex-direction:column;flex:1;min-width:0}
+.chat-head b{font-family:var(--display);font-size:1.15rem}
+.tlog{display:flex;flex-direction:column;gap:10px;padding:20px;min-height:360px;max-height:min(64vh,620px);overflow-y:auto;background:var(--bg)}
+.tmsg{max-width:min(86%,520px);padding:12px 16px;border-radius:20px;font-size:1rem;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.tmsg.bot{align-self:flex-start;background:var(--surface);border-bottom-left-radius:6px;box-shadow:var(--shadow)}
+.tmsg.me{align-self:flex-end;background:var(--ink);color:var(--surface);border-bottom-right-radius:6px}
+.tmsg.alert{align-self:stretch;max-width:none;background:var(--sun-soft);color:var(--ink);font-weight:700;border:2px solid var(--sun)}
+.tq{display:block;font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.tchips{display:flex;flex-wrap:wrap;gap:8px}
+.tchips button{background:var(--surface);min-height:44px;padding:9px 16px}
+.tchips button:hover{border-color:var(--ink)}
+.tchips.next button{border-color:var(--lime);background:var(--lime-soft)}
+.tnote{align-self:stretch;background:var(--surface);border:2px solid var(--lime);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.tnote dl,.tsaved dl{margin:0;display:flex;flex-direction:column;gap:8px}
+.tnote dt,.tsaved dt{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tnote dd,.tsaved dd{margin:0;overflow-wrap:anywhere}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.tform{display:flex;gap:10px;padding:14px;border-top:1px solid var(--line);background:var(--surface)}
+.tform input{min-height:50px;font-size:1rem}
+.tform button{flex:none;min-height:50px;padding-inline:22px}
+.tsaved{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.tsaved li{display:flex;flex-direction:column;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.tsaved li:last-child{border-bottom:0;padding-bottom:0}
+.tsaved summary{cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.tsaved details[open] summary{margin-bottom:10px}
+.panel.urgent{background:var(--sun-soft);box-shadow:none}
+.panel.urgent li b{font-family:var(--display);font-size:1.1rem;margin-right:6px}
+.chatpv{gap:10px}
+.chatpv .tmsg.bot{background:var(--bg);box-shadow:none}
+.chatpv .more{margin-top:6px}
+.ticks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ticks li{display:flex;gap:10px;align-items:flex-start}
+.ticks li svg{flex:none;margin-top:4px;color:var(--lime-deep)}
+.ticks.no li::before{content:"";flex:none;width:14px;height:3px;border-radius:3px;background:var(--muted);margin-top:11px}
+@media (max-width:520px){.tlog{padding:14px;max-height:58vh}.tmsg{max-width:92%}.chat-head button{padding:8px 10px;font-size:.8rem}}
+.tform{flex-direction:row;align-items:center}
+.tform input{flex:1 1 auto;min-width:0}
+.tnote .chip{align-self:flex-start}

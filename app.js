@@ -99,7 +99,9 @@ state.naps={mia:[],arjun:[],zoe:[],ivy:[{date:TODAY,m:590,time:'9:50 am',h:1.5}]
 state.rashes={mia:[],arjun:[],zoe:[],ivy:[{date:'2026-11-10',m:1035,time:'5:15 pm',where:['Face'],text:'Red, dry patches on both cheeks. Worse after the bath.',photo:true},{date:'2026-11-03',m:480,time:'8:00 am',where:['Arms','Legs'],text:'Small bumps in the elbow and knee creases.',photo:true}]};
 state.feedType=null;
 /* Demand for the app. The website comes first; the app is built only if families ask for it. Counts only: an email typed into the list is never kept. */
-state.wait={joined:false,platform:null,visits:1240,taps:{header:96,home:71,family:45},joins:87,plat:{iPhone:52,Android:35},uses:{'Feeding':41,'Sleep':48,'Rashes':33,'Notes for the doctor':57,'Finding care':38,'Videos and guides':22}};
+state.wait={joined:false,platform:null,visits:1240,taps:{header:96,home:71,talk:45},joins:87,plat:{iPhone:52,Android:35},uses:{'Talking a worry through':63,'Notes for the doctor':57,'Feeding':41,'Sleep':48,'Rashes':33,'Finding care':38,'Videos and guides':22}};
+/* Talk it through: the conversation with Pip, the note being built, and the notes the parent has saved. */
+state.talk={log:[],step:0,draft:{},saved:[],seq:0};
 const label=k=>CONCERNS.find(c=>c[0]===k)[1];
 const opts=(arr,v)=>arr.map(o=>{const[k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${k==v?' selected':''}>${esc(t)}</option>`;}).join('');
 const SEED=JSON.parse(JSON.stringify(state));
@@ -416,7 +418,7 @@ function learnView(){
       <section class="panel"><h2>${t.full}</h2><p class="sub">${t.blurb}</p>
        ${t.urgent?'<p class="note"><b>If your child is in danger, call 000.</b> For advice from a nurse in Queensland, call 13 HEALTH (13 43 25 84).</p>':''}
        <ul class="media">${t.items.map((e,i)=>{const pid=t.id+'-'+i,pl=state.playing===pid,vid=e[0]==='v';return `<li><button type="button" class="mcard" data-act="play" data-ep="${pid}" aria-pressed="${pl}" style="--s:var(--${TINT[(ti+i)%5]}-soft)"><span class="mth">${vid?(pl?I.pause:I.play):I.photos}<span class="dur">${vid?e[2]+' min':e[2]+' photos'}</span>${pl?'<span class="prog"><i></i></span>':''}</span><b>${esc(e[1])}</b><span class="sub">${pl?(vid?'Playing a sample':'Showing sample photos'):esc(e[3])}</span></button></li>`;}).join('')}</ul>
-       <div class="row" style="justify-content:flex-start">${t.track?`<button type="button" class="primary" data-act="quick-jump" data-kind="${t.track[0]}">${t.track[1]}</button>`:''}${t.link?`<a class="btn" href="${t.link[0]}">${t.link[1]}</a>`:''}</div></section>
+       <div class="row" style="justify-content:flex-start"><a class="btn primary" href="#talk">Tell Pip about it</a>${t.link?`<a class="btn" href="${t.link[0]}">${t.link[1]}</a>`:''}</div></section>
       <form class="panel" id="ask-form"><div class="field"><label for="ask-input">A question for the next Q&amp;A</label><input type="text" id="ask-input" maxlength="140" placeholder="General questions only"></div><div><button class="primary" type="submit">Send</button></div>${state.asked.length?`<p class="sub">${plural(state.asked.length,'question')} sent.</p>`:''}</form>
       <p class="foot">Short videos and photo guides from the PaedsMe team. General information, not advice about your child. Each one is a draft until a paediatrician signs it off, and the media here are samples.</p>`;
   return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Learn</span><h1>Short videos and photo guides</h1><p class="lead">Five topics to start. General information from the PaedsMe team, never advice about one child.</p></div></div></div>${sparks}</section>
@@ -424,7 +426,7 @@ function learnView(){
 }
 
 /* ---------- Website format (16 Nov 2026, one site from 18 Nov). Every screen is laid out as a web page:
-   a band (the hero) on the aqua ground, wide sections, and the site footer. My family is part of the site. Bands animate in once per route change, never on a re-render. ---------- */
+   a band (the hero) on the aqua ground, wide sections, and the site footer. My family was part of the site until it was parked on 19 Nov. Bands animate in once per route change, never on a re-render. ---------- */
 const TICK='<svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const ARROW='<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M4 10h12M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const SPARK='<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c.6 5.2 2.8 7.4 8 8-5.2.6-7.4 2.8-8 8-.6-5.2-2.8-7.4-8-8 5.2-.6 7.4-2.8 8-8z" fill="currentColor"/></svg>';
@@ -460,34 +462,90 @@ function reqCard(id){
     ${r.step<3?`<div class="row" style="justify-content:flex-start">${r.step===0?'<button type="button" class="primary" data-act="req-share" data-id="'+id+'">Send to my GP</button>':''}<button type="button" data-act="req-next" data-id="${id}">Next step (demo)</button></div>`:''}</section>`;
 }
 /* One website (18 Nov 2026). The team is starting with the website alone, to test demand for the app. Home is the front door,
-   My family is the record as web pages, and Get the app is the list that measures whether families want it on a phone. */
+   Talk it through is the conversation with Pip (My family, the record as web pages, is parked from 19 Nov), and Get the app is the
+   list that measures whether families want it on a phone. */
 function home(){
-  const logs=[[I.bottle,'Feeding','Breast, bottle, solids, meals and snacks.','accent'],[I.moon,'Sleep','Last night and naps, in hours.','violet'],[I.spots,'Rashes','Where it is, what it looks like, and a photo.','orange'],[I.eye,'Things you notice','A note in your own words, with a photo or video.','sun']];
-  const day=dayLog('ivy');
   return `<section class="band"><div class="wrap band-2"><div class="band-text">
      <span class="eyebrow">For families in Australia</span>
-     <h1>Everything you notice, <em>ready for the doctor</em></h1>
-     <p class="lead">PaedsMe keeps feeding, sleep, rashes and the things you notice in one place, and helps you reach a paediatrician sooner. You record it. Your clinician reads it before the visit.</p>
-     <div class="cta-row"><a class="btn primary cta" href="#find-care">Find care ${ARROW}</a><a class="btn cta" href="#family">Start a family record</a></div>
-     <ul class="trust left"><li>${TICK} It records and relays. It never diagnoses.</li><li>${TICK} Clinicians cannot pay to rank higher.</li></ul></div>
-    <div class="band-side"><div class="preview"><div class="pv-head"><span class="ava" aria-hidden="true">I</span><div><b>Ivy</b><span class="sub">10 months · a sample record</span></div></div>${day||'<p class="sub">Nothing logged yet today.</p>'}<a class="more" href="#family">Open My family ${ARROW}</a></div></div></div>${sparks}</section>
+     <h1>Worried about your child? <em>Talk it through</em></h1>
+     <p class="lead">Tell Pip what you have noticed, the way you would say it to a friend. Pip helps you get it down clearly and points you to the right person. Pip is an AI companion, not a doctor, and never says what something is.</p>
+     <div class="cta-row"><a class="btn primary cta" href="#talk">Talk it through ${ARROW}</a><a class="btn cta" href="#find-care">Find care</a></div>
+     <ul class="trust left"><li>${TICK} Your words, kept as you said them</li><li>${TICK} Never a diagnosis</li></ul></div>
+    <div class="band-side"><div class="preview chatpv"><div class="pv-head">${PIP_SVG}<div><b>Pip</b><span class="sub">A sample conversation</span></div></div>
+      <div class="tmsg me">She keeps waking at night and I do not know why.</div>
+      <div class="tmsg bot">Thank you for telling me. When did you first notice it?</div>
+      <div class="tmsg me">About three weeks ago.</div>
+      <div class="tmsg bot">How often does it happen?</div>
+      <a class="more" href="#talk">Start your own ${ARROW}</a></div></div></div>${sparks}</section>
   <section class="sec"><div class="wrap">${secHead('What you can do here','One place, from the first worry to the plan','Start anywhere. Each part works without the others.')}
-   <div class="grid3">
-    <a class="feat" href="#find-care" style="--s:var(--accent-soft)"><span class="dot">${I.people}</span><h3>Find care</h3><p>Say what is going on in a sentence. Rapid Access is a proposed model: a paediatrician by video within 48 hours of the referral.</p><span class="more">Find care ${ARROW}</span></a>
-    <a class="feat" href="#adhd-care" style="--s:var(--violet-soft)"><span class="dot">${I.chart}</span><h3>ADHD care</h3><p>Three steps, shared between a specialist and your GP, with the likely costs set out before you start.</p><span class="more">See the steps ${ARROW}</span></a>
-    <a class="feat" href="#learn" style="--s:var(--sun-soft)"><span class="dot">${I.play}</span><h3>Learn</h3><p>Short videos and photo guides on feeding, sleep, skin, development and when a child is unwell.</p><span class="more">Browse the topics ${ARROW}</span></a>
+   <div class="grid4">
+    <a class="feat" href="#talk" style="--s:var(--lime-soft)"><span class="dot">${I.ask}</span><h3>Talk it through</h3><p>Tell Pip what is worrying you. You leave with a clear note in your own words.</p><span class="more">Talk to Pip ${ARROW}</span></a>
+    <a class="feat" href="#find-care" style="--s:var(--accent-soft)"><span class="dot">${I.people}</span><h3>Find care</h3><p>Rapid Access is a proposed model: a paediatrician by video within 48 hours of the referral.</p><span class="more">Find care ${ARROW}</span></a>
+    <a class="feat" href="#adhd-care" style="--s:var(--violet-soft)"><span class="dot">${I.chart}</span><h3>ADHD care</h3><p>Three steps, shared between a specialist and your GP, with the likely costs set out.</p><span class="more">See the steps ${ARROW}</span></a>
+    <a class="feat" href="#learn" style="--s:var(--sun-soft)"><span class="dot">${I.play}</span><h3>Learn</h3><p>Short videos and photo guides on feeding, sleep, skin, development and being unwell.</p><span class="more">Browse the topics ${ARROW}</span></a>
    </div></div></section>
-  <section class="sec alt"><div class="wrap"><div class="grid2 mid">${secHead('Keep track at home','Four things to log, each in a few seconds','What you record goes to your clinician before the visit. Nothing is scored, and the record never says what something is.')}
-    <ul class="loglist">${logs.map(l=>`<li><span class="dot" style="--s:var(--${l[3]}-soft)">${l[0]}</span><div><b>${l[1]}</b><span class="sub">${l[2]}</span></div></li>`).join('')}</ul></div>
-   <div class="cta-row center"><a class="btn primary cta" href="#family">Open My family ${ARROW}</a></div></div></section>
-  <section class="sec"><div class="wrap">${secHead('How it works','You notice. They read. The plan comes back.')}
+  <section class="sec alt"><div class="wrap">${secHead('What Pip is','A companion for the worry, not a replacement for the doctor','You notice more than a visit has time for. Pip makes sure none of it is lost.')}
+   <div class="grid2 eq">
+    <div class="wcard"><h3>Pip does</h3><ul class="ticks"><li>${TICK} Listens, for as long as you need</li><li>${TICK} Asks a few short questions so nothing is left out</li><li>${TICK} Writes a note in your own words</li><li>${TICK} Points you to a GP, a nurse line or a paediatrician</li></ul></div>
+    <div class="wcard"><h3>Pip never does</h3><ul class="ticks no"><li>Says what something is</li><li>Says whether it is normal</li><li>Advises on medicine or treatment</li><li>Decides how urgent it is. In an emergency, call 000.</li></ul></div>
+   </div>
+   <div class="cta-row center"><a class="btn primary cta" href="#talk">Talk it through ${ARROW}</a></div></div></section>
+  <section class="sec"><div class="wrap">${secHead('How it works','You talk. Pip writes it down. The right person reads it.')}
    <div class="grid3">
-    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>You record what you see</h3><p>At home, when it happens. A feed, a nap, a rash, a short video.</p></div>
-    <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>Your clinician reads it first</h3><p>Your notes arrive before the visit, so the appointment starts where you are up to.</p></div>
-    <div class="feat" style="--s:var(--lime-soft)"><span class="num">3</span><h3>The plan comes back to you</h3><p>Your clinician sets the plan and explains every result. PaedsMe keeps it where you can find it.</p></div>
+    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>Say it your way</h3><p>Type what you have noticed, at any hour, without finding the right words first.</p></div>
+    <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>Pip writes the note</h3><p>What you noticed, since when, how often, and what worries you most. Nothing is scored.</p></div>
+    <div class="feat" style="--s:var(--lime-soft)"><span class="num">3</span><h3>You take it with you</h3><p>Copy it for your GP, or use it to ask for a paediatrician. The clinician sets the plan.</p></div>
    </div></div></section>
-  <section class="sec alt"><div class="wrap closer"><span class="kick">The app</span><h2>Want PaedsMe on your phone?</h2><p>We are starting with this website. If enough families ask for it, the app is what we build next.</p>
+  <section class="sec alt"><div class="wrap closer"><span class="kick">The app</span><h2>Want Pip on your phone?</h2><p>We are starting with this website. If enough families ask for it, the app is what we build next.</p>
    <div class="cta-row center"><a class="btn primary cta" href="#get-app" data-cta="home">Get the app ${ARROW}</a><button type="button" class="cta" data-act="survey">Take the parent survey</button></div></div></section>`;
+}
+/* Talk it through (19 Nov 2026). The Family app's job, done as a conversation: a parent says what worries them, Pip asks five
+   short questions, and the answer is a note in the parent's own words. Pip records and relays. It never says what something is,
+   whether it is normal, or how urgent it is. The replies here are scripted; a live model must be held to the same rules. */
+const TALK_Q=[['age','How old is your child?',['Under 1','1 to 2','3 to 5','6 to 11','12 to 17']],['since','When did you first notice it?',['Today','This week','A few weeks ago','Months ago']],['often','How often does it happen?',['All the time','Every day','A few times a week','Now and then','Just once']],['media','Do you have any photos or videos of it?',['Yes','No','I could take one']],['fear','What worries you most about it? There is no wrong answer.',[]]];
+const TALK_LAB={what:'What I noticed',age:'Age',since:'First noticed',often:'How often',media:'Photos or videos',fear:'What worries me most'};
+const TALK_START=['She keeps waking at night','A rash that keeps coming back','He is not talking much yet','Feeding is a battle'];
+const TALK_AGE={'Under 1':0,'1 to 2':1,'3 to 5':4,'6 to 11':8,'12 to 17':14};
+const ASKS=/\b(is (this|it|that|she|he) normal|should i (be )?worr|what is it\b|what could it be|what(?:'s| is) wrong|is (it|this|that) serious|do(es)? (she|he|they) have|could (it|this) be|what should i give|how much .*(medicine|give)|is it (adhd|autism|eczema))/i;
+const CANNOT='I cannot tell you that, and I would not want to guess about your child. A nurse can talk it through with you now on 1800 022 222, and your GP can see them. What I can do is make sure they hear everything you have noticed.';
+const URGENT='If a child is in danger, call 000 now. For health advice from a nurse, call healthdirect on 1800 022 222, or in Queensland 13 HEALTH on 13 43 25 84. Pip cannot help with urgent medical problems.';
+const talkTopic=t=>{t=String(t).toLowerCase();return /sleep|wak|nap|bedtime|night/.test(t)?'sleep':/rash|skin|eczema|spots|itch/.test(t)?'skin':/feed|eat|bottle|breast|solids|food|milk/.test(t)?'feeding':/fever|temperature|sick|vomit|unwell|cough/.test(t)?'unwell':'nd';};
+const noteText=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>TALK_LAB[k]+': '+d[k]).join('\n');
+function talkSay(text,extra){state.talk.log.push(Object.assign({t:'pip',text},extra||{}));}
+function talkAsk(){const T=state.talk,q=TALK_Q[T.step-1];if(q)talkSay(q[1],{chips:q[2],n:T.step});}
+function talkSend(text){
+  text=String(text||'').trim().slice(0,400);if(!text)return;const T=state.talk;
+  T.log.forEach(m=>{delete m.chips;delete m.next;});T.log.push({t:'me',text});
+  if(EMERG.test(text)){T.log.push({t:'alert',text:URGENT});return;}
+  const mid=T.step>0&&T.step<=TALK_Q.length;
+  if(ASKS.test(text)&&(mid||text.length<60)){talkSay(CANNOT+(mid?'':' Tell me what you have noticed, in your own words.'));if(mid)talkAsk();return;}
+  if(!mid){T.draft={what:text};T.step=1;talkSay('Thank you for telling me. I will ask five short questions so nothing gets lost, then write it down in your words.');talkAsk();return;}
+  T.draft[TALK_Q[T.step-1][0]]=text;T.step++;
+  if(T.step<=TALK_Q.length){talkAsk();return;}
+  talkSay('Here is what you have told me. Change anything that is not right by starting again.');T.log.push({t:'note',d:Object.assign({},T.draft),status:'pending'});
+}
+function talkSave(i){const T=state.talk,m=T.log[i];if(!m||m.t!=='note'||m.status!=='pending')return;
+  m.status='done';const id='n'+(++T.seq);T.saved.unshift({id,date:TODAY,d:m.d});bump(talkTopic(m.d.what),'l');
+  talkSay('Saved. Who would you like to take it to?',{next:id});}
+function talkView(){
+  const T=state.talk;
+  if(!T.log.length)talkSay('Hi, I am Pip. Tell me what is worrying you about your child, in your own words. I am not a doctor and I will not tell you what it is. I will help you get it down clearly, so the right person hears all of it.',{chips:TALK_START});
+  const lines=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>`<div><dt>${TALK_LAB[k]}</dt><dd>${esc(d[k])}</dd></div>`).join('');
+  const log=T.log.map((m,i)=>m.t==='note'
+    ?`<div class="tnote"><span class="lab">Your note</span><dl>${lines(m.d)}</dl>${m.status==='pending'?`<div class="acts"><button type="button" class="primary" data-act="talk-save" data-i="${i}">Save this note</button><button type="button" data-act="talk-new">Start again</button></div>`:'<span class="chip good">Saved</span>'}</div>`
+    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
+  const saved=T.saved.length?`<ul class="tsaved">${T.saved.map(n=>`<li><details><summary><b>${esc(n.d.what.length>70?n.d.what.slice(0,67)+'...':n.d.what)}</b><span class="sub">${fmt(n.date)}${n.d.age?' · '+esc(n.d.age):''}</span></summary><dl>${lines(n.d)}</dl></details><div class="acts"><button type="button" data-act="talk-gp" data-id="${n.id}">Copy for my GP</button><button type="button" data-act="talk-find" data-id="${n.id}">Find care with this</button></div></li>`).join('')}</ul>`
+    :'<p class="sub">Nothing saved yet. A note you save with Pip appears here, ready to copy for your GP.</p>';
+  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Pip · AI companion · scripted demo</span><h1>Tell Pip what is worrying you</h1><p class="lead">Pip listens, helps you get it down clearly, and points you to the right person. Pip is not a doctor and never says what something is.</p></div></div></div>${sparks}</section>
+  <section class="dash fam"><div class="wrap"><div class="talk">
+    <section class="panel chat" aria-label="Conversation with Pip"><div class="chat-head">${PIP_SVG}<div><b>Pip</b><span class="sub">Here at any hour. Not a doctor.</span></div><button type="button" data-act="talk-new">New conversation</button></div>
+     <div class="tlog" id="talk-log" role="log" aria-live="polite">${log}</div>
+     <form class="tform" id="talk-form"><label class="sr" for="talk-input">Your message to Pip</label><input type="text" id="talk-input" maxlength="400" autocomplete="off" placeholder="Type it the way you would say it"><button class="primary" type="submit">Send</button></form></section>
+    <div class="fcol">
+     <section class="panel"><div class="row"><h2>Your notes</h2><span class="chip quiet">${T.saved.length} saved</span></div>${saved}<p class="foot">Kept in this browser only. Nothing is uploaded, and nothing is scored.</p></section>
+     <section class="panel urgent"><h2>If it is urgent</h2><ul class="plain"><li><b>000</b> if your child is in danger</li><li><b>1800 022 222</b> healthdirect, a nurse at any hour</li><li><b>13 43 25 84</b> 13 HEALTH, in Queensland</li></ul><p class="foot">Pip does not decide how urgent something is. Draft wording, for a paediatrician to sign off.</p></section>
+     <section class="panel nudge"><div class="txt"><h2>Want Pip on your phone?</h2><p class="sub">The app is not built yet. Tell us you want it and we will build it sooner.</p></div><a class="btn primary cta" href="#get-app" data-cta="talk">Get the app ${ARROW}</a></section>
+    </div></div></div></section>`;
 }
 function getApp(){
   const w=state.wait;
@@ -501,7 +559,7 @@ function getApp(){
   return `<section class="band"><div class="wrap band-2"><div class="band-text">
      <span class="eyebrow">The app · not built yet</span>
      <h1>PaedsMe <em>on your phone</em></h1>
-     <p class="lead">We are starting with this website, and everything in My family works here today. If enough families ask for it, the app is what we build next.</p>
+     <p class="lead">We are starting with this website, and Pip works here today. If enough families ask for it, the app is what we build next.</p>
      <ul class="trust left"><li>${TICK} Free to join the list</li><li>${TICK} One email, when it is ready</li></ul></div>
     <div class="band-side">${form}</div></div>${sparks}</section>
   <section class="sec"><div class="wrap">${secHead('What the app would add','The same record, closer to hand','These are proposals. What families pick on the list decides which comes first.')}
@@ -510,7 +568,7 @@ function getApp(){
     <div class="feat" style="--s:var(--orange-soft)"><span class="dot">${I.cam}</span><h3>Straight from your camera</h3><p>Add a photo or a video to a note the moment you take it.</p></div>
     <div class="feat" style="--s:var(--violet-soft)"><span class="dot">${I.cal}</span><h3>A nudge before the visit</h3><p>A reminder to send your notes a few days before each appointment.</p></div>
    </div>
-   <div class="cta-row center"><a class="btn cta" href="#family">Use My family on the website</a></div></div></section>`;
+   <div class="cta-row center"><a class="btn cta" href="#talk">Talk to Pip on the website</a></div></div></section>`;
 }
 function findCare(){
   const q=state.q, m=match(q), B=q.age<17?0:q.age<25?1:2, id=reqKey(), k=state.kids[id]||{name:'another child'}, rq=state.req[id];
@@ -574,7 +632,7 @@ function findCare(){
     <div class="feat" style="--s:var(--violet-soft)"><span class="num">3</span><h3>Video visit in 48 hours</h3><p>A paediatrician sees you by video within 48 hours of the referral, or in person if you are local.</p></div>
     <div class="feat" style="--s:var(--lime-soft)"><span class="num">4</span><h3>A plan to follow</h3><p>The paediatrician sets the plan. Your GP does the ongoing care, close to home.</p></div>
    </div>
-   <div class="cta-row center"><a class="btn primary cta" href="#family">Open My family ${ARROW}</a></div></div></section>`;
+   <div class="cta-row center"><a class="btn primary cta" href="#talk">Talk it through with Pip ${ARROW}</a></div></div></section>`;
 }
 
 const dxSite=r=>r==='Gold Coast'?'Hub, Southport':r==='Regional or remote'?'Home kit, posted to the family':'Spoke, '+r;
@@ -773,17 +831,17 @@ function teamView(){
     <p class="foot">Counts only. No child, parent or note is identified.</p></section>
    <section class="panel"><div class="row"><h2>Demand for the app</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <div class="kpis flat">${kpi('Site visits',w.visits.toLocaleString('en-AU'),'synthetic')}${kpi('Get the app taps',taps,Math.round(100*taps/w.visits)+'% of visits')}${kpi('Joined the list',w.joins,Math.round(100*w.joins/taps)+'% of taps')}${kpi('Most wanted',use[0],use[1]+' picks')}</div>
-    <p class="sub">Taps by place: header ${w.taps.header}, home page ${w.taps.home}, My family ${w.taps.family}. Phones: iPhone ${w.plat.iPhone}, Android ${w.plat.Android}.</p>
+    <p class="sub">Taps by place: header ${w.taps.header}, home page ${w.taps.home}, Talk it through ${w.taps.talk}. Phones: iPhone ${w.plat.iPhone}, Android ${w.plat.Android}.</p>
     <p class="foot">The website comes first. The app is built only if these numbers say families want it. The pass mark is not set yet, and no email is kept in this prototype.</p></section>
    <div class="cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
     <section class="panel"><h2>How a referral moves</h2><ol class="plain"><li>The parent is matched and asks for a referral.</li><li>PaedsMe drafts the request. The GP writes the referral.</li><li>It reaches the clinic's practice manager by email, in one format for every clinic.</li><li>The clinic triages by hand. PaedsMe does not triage.</li><li>Rapid Access: a video visit within 48 hours, or in person if local.</li></ol>
      <p class="foot">One standard workflow. No per-clinic customisation.</p></section>
-    <section class="panel"><div class="row"><h2>Parked for now</h2><span class="chip quiet">Can return later</span></div><ul class="plain"><li>GP referral screen</li><li>Diagnostics hub</li><li>Clinic tools</li><li>Tests tab in the Family app</li></ul>
+    <section class="panel"><div class="row"><h2>Parked for now</h2><span class="chip quiet">Can return later</span></div><ul class="plain"><li>GP referral screen</li><li>Diagnostics hub</li><li>Clinic tools</li><li>My family: the home logs, notes and care plan</li></ul>
      <div>${PARKED_ON?'<span class="chip good">Parked screens are showing</span>':'<a class="btn" href="?parked=1#clinic">Open with parked screens</a>'}</div></section>
    </div>
   </div></section>`;
 }
-const VIEWS={home,family,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{'gp-referral':gpView,diagnostics:hub,clinic}:{})};
+const VIEWS={home,talk:talkView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
 function render(){
   const v=VIEWS[location.hash.slice(1)]?location.hash.slice(1):'home';
   document.querySelectorAll('.tabs a').forEach(a=>{if(a.getAttribute('href')==='#'+v){a.setAttribute('aria-current','page');const n=a.parentElement;if(n&&n.scrollWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-n.offsetLeft-(n.clientWidth-a.offsetWidth)/2;}else a.removeAttribute('aria-current');});
@@ -792,6 +850,7 @@ function render(){
   root.innerHTML=VIEWS[v]();
   const fam=v==='family';
   syncFab();
+  if(v==='talk'){const l=$('talk-log');if(l)l.scrollTop=l.scrollHeight;if(render.focusTalk){render.focusTalk=false;const ti=$('talk-input');if(ti)ti.focus();}}
   if(fam&&state.quick){const q=$('quick-input');if(q)q.focus();}
 }
 function syncFab(){$('pip-open').hidden=!$('pip').hidden;}
@@ -835,6 +894,14 @@ document.addEventListener('click',e=>{
   else if(a==='cm-form'){state.cm.forms[b.dataset.f]=true;toast(b.dataset.f==='parent'?'Saved. The paediatrician sees your answers before the visit.':'Link sent to the school');}
   else if(a==='sc-done'){const s=state.shared[+b.dataset.i];s.gpDue=addDays(TODAY,s.every);s.script=addDays(TODAY,s.every);toast('Visit summary sent to '+s.paed);}
   else if(a==='sc-esc'){const s=state.shared[+b.dataset.i];s.asked=true;state.escal.push({c:s.c,g:s.g,from:'Dr R. Mehta, GP',date:TODAY,why:'Asked for a review before the yearly date.'});toast('Sent. '+s.paed+' will offer a video time.');}
+  else if(a==='talk-chip'){talkSend(b.textContent);render.focusTalk=true;}
+  else if(a==='talk-save'){talkSave(+b.dataset.i);}
+  else if(a==='talk-new'){Object.assign(state.talk,{log:[],step:0,draft:{}});}
+  else if(a==='talk-nurse'){state.talk.log.forEach(m=>{delete m.next;});talkSay('healthdirect is 1800 022 222, at any hour, and a nurse answers. In Queensland you can also call 13 HEALTH on 13 43 25 84. If your child is in danger, call 000.');}
+  else if(a==='talk-gp'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);if(!n)return;const t='For my GP, from a parent\n'+noteText(n.d);(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copied. Paste it into a message, or show it at the visit.'),()=>toast('Open the note under Your notes and show it at the visit.'));
+    if(state.talk.log.some(m=>m.next)){state.talk.log.forEach(m=>{delete m.next;});talkSay('Copied for your GP. Paste it into a message or show it at the visit. If you would like a paediatrician, your GP writes the referral.');}}
+  else if(a==='talk-find'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);if(!n)return;hear(n.d.what+(TALK_AGE[n.d.age]==null&&n.d.age?'. '+n.d.age:''));if(TALK_AGE[n.d.age]!=null)state.q.age=TALK_AGE[n.d.age];state.q.who='other';location.hash='find-care';return;}
+  else if(a==='talk-learn'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);state.learnOpen=talkTopic(n?n.d.what:'');state.playing=null;location.hash='learn';return;}
   else if(a==='wait-reset'){state.wait.joined=false;}
   else if(a==='survey'){toast('The parent survey is not open yet. The link will sit here.');return;}
   else if(a==='book'){book(b.dataset.name);}
@@ -883,6 +950,7 @@ document.addEventListener('submit',e=>{
     else if(state.quick==='win'){state.wins[id].unshift(v);toast('Great!');}
     else{state.questions[id].push(v);toast('Saved for the visit');}
     state.quick=null;render();return;}
+  if(e.target.id==='talk-form'){const v=$('talk-input').value;if(!v.trim()){toast('Type a few words first');return;}talkSend(v);render.focusTalk=true;render();return;}
   if(e.target.id==='wait-form'){const em=$('wait-email').value.trim(),w=state.wait;if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Type your email first');return;}
     w.joined=true;w.joins++;w.platform=(document.querySelector('input[name="wplat"]:checked')||{}).value||null;if(w.platform)w.plat[w.platform]++;
     document.querySelectorAll('input[name="wuse"]:checked').forEach(x=>{if(w.uses[x.value]!=null)w.uses[x.value]++;});toast('Thanks. You are on the list.');render();return;}
@@ -900,10 +968,10 @@ const AGE={mia:4,arjun:9,zoe:13,ivy:0};
 const pip={live:false,sample:null,tts:null,voice:false,busy:false,ctl:null,log:[],turns:[],greeted:false};
 const role=()=>{const v=location.hash.slice(1);return v==='gp-referral'?'gp':(v==='diagnostics'||v==='clinic')?'staff':'parent';};
 const ROLE={
- parent:{who:'Helping a parent or carer',about:'a parent or carer using the PaedsMe website',chips:['Next visit?','Find a specialist','Add a note','Log a rash','Talk to a person']},
+ parent:{who:'Helping a parent or carer',about:'a parent or carer using the PaedsMe website',chips:['Talk it through','Find a specialist','Next visit?','Talk to a person']},
  gp:{who:'Helping a referring GP',about:'a GP using the referral portal',chips:['Where are my referrals up to?','Who is due a review?','Does the referral need a named doctor?','Talk to a person']},
  staff:{who:'Helping clinic and hub staff',about:'clinic or diagnostics hub staff',chips:['Which reviews are overdue?','Prompt families with expiring referrals','What is waiting for a report?']}};
-const EMERG=/\b(000|emergency|not breathing|can'?t breathe|cannot breathe|unconscious|unresponsive|turning blue|won'?t wake|overdose|suicid|seizure (that )?(won'?t|will not|isn'?t|is not) stop)/i;
+const EMERG=/\b(000|emergency|not breathing|stopped breathing|isn'?t breathing|struggling to breathe|choking|not responding|can'?t breathe|cannot breathe|unconscious|unresponsive|turning blue|won'?t wake|overdose|suicid|seizure (that )?(won'?t|will not|isn'?t|is not) stop)/i;
 const KINDS={book:'parent',reschedule:'parent',renew_referral:'parent',note:'parent',send_recalls:'staff',send_renewal_prompts:'staff',navigator_callback:'any'};
 
 function book(name){const c=CLINICIANS.find(x=>x.name===name);if(!c)return;const id=reqKey();
@@ -962,7 +1030,7 @@ Rules:
 - A referral to a private specialist does not need to name the doctor, and a GP referral usually lasts 12 months from the first specialist visit.
 - ADHD shared care fees are proposals from the clinical lead. When you mention them, say they are approximate and not a quote.
 - Parents' notes are a record for the clinician. Never say whether something a parent noticed is normal or worrying.
-- Feeding, sleep and rash logs are a record too. Never say what a rash is, or whether feeding or sleep is on track. Point to the Feeding, Sleep and Rash tiles on the Today screen to log them.
+- Feeding, sleep and rash logs are a record too. Never say what a rash is, or whether feeding or sleep is on track. Point to the Talk it through page, where the parent can say it in their own words.
 - Test results: only repeat the doctor's note to the family, word for word. Never explain, interpret or guess a result. If a result is held for a conversation, say the doctor will go through it and offer to ask for an earlier call.
 - Use only the app state below. If you do not know, say so and offer a navigator call.
 - Reply in plain text with no markdown, under 70 words, warm and direct.
@@ -985,6 +1053,7 @@ function speak(text){if(pip.voice&&pip.tts)pip.tts.speak(String(text).slice(0,19
 function scripted(text){
   const q=text.toLowerCase(),r=role(),k=state.kids[state.child],ap=kidAppts(),nx=ap[0];
   const tryP=(a,ok)=>{try{propose(a);const c=pip.log.pop();say(ok);pip.log.push(c);}catch(e){say(e.message);}};
+  if(r==='parent'&&/talk it through|worried|worry|anxious|scared/.test(q)){location.hash='talk';return say('Open Talk it through and tell me what is worrying you. I will help you get it down clearly.');}
   if(/human|person|navigator|call me|speak to|talk to/.test(q))return tryP({kind:'navigator_callback',note:''},'I can arrange a call from a care navigator. Confirm below and a person calls back.');
   if(r==='parent'&&/adhd|shared care/.test(q))return say(`ADHD care is shared. A paediatrician does the assessment over two visits, about ${money(CARE.first[0])} then ${money(CARE.second[0])} before Medicare. Your GP does the regular visits, about ${money(CARE.gp[0])} each. The paediatrician reviews twice a year. These figures are indicative, not a quote. The ADHD care screen has the detail.`);
   if(r==='staff'){
@@ -1001,7 +1070,7 @@ function scripted(text){
     return say('Fill in the form on this screen and the likely matches update as you go. I can also tell you where your referrals are up to.');
   }
   if(/result|test|eeg|ecg|monitor|brain wave|heart trace/.test(q)){const ts=kidTests(state.child);return say(ts.length?ts.map(t=>TINFO[t.type].name+': '+(t.s===6?(t.result.mode==='note'?sdoc(t)+' says: '+t.result.plain:'result ready. '+sdoc(t)+' will go through it with you.'):tstatus(t)[0].toLowerCase()+'. '+twhen(t))).join('\n\n'):'No tests are booked.');}
-  if(/rash|feed|bottle|breast|nap\b|solids/.test(q))return say(`Tap Feeding, Sleep or Rash on the Today screen to log it. ${k.doc} sees the record before the visit. I cannot say what a rash is, or whether feeding or sleep is on track. Your care team does that.`);
+  if(/rash|feed|bottle|breast|nap\b|solids/.test(q))return say('Tell me about it on the Talk it through page and I will write it down in your words for your doctor. I cannot say what a rash is, or whether feeding or sleep is on track. Your care team does that.');
   if(/resched|move|change.*(appointment|time|date)|cancel/.test(q))return tryP({kind:'reschedule',appointment:''},'I can ask the clinic for new times. Confirm below.');
   if(/referral|renew|expir/.test(q)){const left=days(k.refUntil);return left<60?tryP({kind:'renew_referral'},`${k.name}'s referral ends ${fmt(k.refUntil)}, in ${left} days. I can ask your GP to renew it.`):say(`${k.name}'s referral is valid until ${fmt(k.refUntil)}, ${left} days from now. Nothing to do yet.`);}
   if(/prep|prepare|bring|ready/.test(q))return say(nx?`For ${nx.what} on ${fmt(nx.date)}:\n- ${nx.prep.join('\n- ')}`:'There is nothing booked to prepare for.');
@@ -1061,8 +1130,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)op
     const t=await window.claude.use('tts');if(t){pip.tts=t;$('pip-voice').hidden=false;}}catch(e){}
   renderPip();
 })();
-if(PARKED_ON){const n=document.querySelector('.tabs');if(n)n.insertAdjacentHTML('beforeend','<a href="#gp-referral">GP referral</a><a href="#diagnostics">Diagnostics hub</a><a href="#clinic">Clinic tools</a>');}
+if(PARKED_ON){const n=document.querySelector('.tabs');if(n)n.insertAdjacentHTML('beforeend','<a href="#family">My family</a><a href="#gp-referral">GP referral</a><a href="#diagnostics">Diagnostics hub</a><a href="#clinic">Clinic tools</a>');}
 window.addEventListener('hashchange',()=>{render();renderPip();window.scrollTo(0,0);});
-function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};render();renderPip();}
+function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};render();renderPip();}
 window.claude?.hot?.snapshot?.(()=>state);
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
