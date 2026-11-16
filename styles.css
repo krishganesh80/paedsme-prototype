@@ -904,3 +904,20 @@ button.chosen svg{color:var(--lime-deep)}
 @media (prefers-reduced-motion:reduce){.pres.on .pip-ring,.pip.thinking .pip-head .pip-img{animation:none}}
 .meet .who b,.meet .who .sub{text-transform:none;letter-spacing:0}
 .meet .who .sub{font-size:.9rem;font-weight:500;color:var(--muted)}
+
+/* Track as its own page (1 Dec 2026). */
+.trkpage{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+@media (max-width:1000px){.trkpage{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.trkpage{grid-template-columns:minmax(0,1fr)}}
+.tcard h2{display:flex;align-items:center;gap:10px;font-size:1.25rem}
+.tcard .ti{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft)}
+.tcard .ti svg{width:20px;height:20px}
+.tcard .tchart{width:100%;box-shadow:none;padding:0;background:transparent;align-self:stretch}
+.tcard .tnum{width:100%;align-self:stretch}
+.trow{display:flex;align-items:center;gap:12px}
+.tcard .stepper button{min-width:48px;min-height:48px;font-size:1.3rem}
+.tcard .stepper output{min-width:44px;text-align:center;font-family:var(--display);font-weight:700;font-size:1.6rem}
+.mpick2{display:flex;flex-wrap:wrap;gap:6px}
+.mpick2 button{min-height:44px;padding:8px 14px;font-size:.88rem}
+.mpick2 button[aria-pressed="true"]{border-color:var(--lime);background:var(--lime-soft)}
+.trkfoot{margin-top:24px}

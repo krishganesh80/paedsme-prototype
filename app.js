@@ -429,7 +429,7 @@ function family(){
    without it, or with sound off, the captions advance on a timer. Only scripts with no health advice are written here. Every
    other video shows the waiting lines until a paediatrician writes and approves its script. */
 const SCRIPTS={
- intro:['Hi, I am Pip. I am an AI presenter, not a doctor.','Learn has short guides on five topics: feeding, sleep, skin, development and being unwell.','A paediatrician approves every health script before I present it.','Under each topic you will find trusted reading from Australian health services.','If something is worrying you, open Talk it through and tell me about it.'],
+ intro:['Hi, I am Pip. I am an AI presenter, not a doctor.','Learn has short guides on five topics: feeding, sleep, skin, development and being unwell.','A paediatrician approves every health script before I present it.','Under each topic you will find trusted reading from Australian health services.','If something is worrying you, open the Pip page and tell me about it.'],
  'unwell-2':['A video visit is an ordinary appointment, on your phone or computer.','Your GP writes the referral first. PaedsMe cannot book a specialist without one.','The clinic sends you a link and a time by message.','Find a quiet spot with good light, and have your child with you.','Keep your notes, photos and videos open, so you can share what you have noticed.','The clinician sets the plan, and a letter goes back to your GP.','If your child is in danger, do not wait for a visit. Call 000.']};
 const WAITING=['This one is not ready yet.','A paediatrician approves every health script before I present it.','Until then, the trusted reading on this page covers the topic.'];
 const PIP_TALK='<span class="pip-ring"><img class="pip-img" src="img/pip.jpg" alt=""></span>';
@@ -521,9 +521,9 @@ function reqCard(id){
 function home(){
   return `<section class="band"><div class="wrap band-2"><div class="band-text">
      <span class="eyebrow">For families in Australia</span>
-     <h1>Worried about your child? <em>Talk it through</em></h1>
+     <h1>Worried about your child? <em>Talk to Pip</em></h1>
      <p class="lead">Tell Pip what you’ve noticed, the way you’d tell a friend. Pip writes it down clearly and helps you find the right person. Pip is an AI helper, not a doctor.</p>
-     <div class="cta-row"><a class="btn primary cta" href="#talk">Talk it through ${ARROW}</a><a class="btn cta" href="#find-care">Find care</a></div></div>
+     <div class="cta-row"><a class="btn primary cta" href="#talk">Talk to Pip ${ARROW}</a><a class="btn cta" href="#find-care">Find care</a></div></div>
     <div class="band-side"><div class="preview chatpv"><div class="pv-head">${PIP_SVG}<div><b>Pip</b><span class="sub">A sample conversation</span></div></div>
       <div class="tmsg me">She keeps waking at night and I do not know why.</div>
       <div class="tmsg bot">Thank you for telling me. When did you first notice it?</div>
@@ -533,14 +533,14 @@ function home(){
   <section class="strip"><div class="wrap"><a class="linkcard urgentlink" href="#urgent"><span><b>Need a paediatrician soon?</b><span class="sub">Video call with ${TELE.doctor}. A fee applies. In danger, call 000.</span></span>${ARROW}</a></div></section>
   <section class="sec"><div class="wrap">${secHead('Start here','What do you need today?')}
    <div class="grid4">
-    <a class="feat" href="#talk" style="--s:var(--lime-soft)"><span class="dot">${I.ask}</span><h3>Talk it through</h3><p>Tell Pip what’s worrying you.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
+    <a class="feat" href="#talk" style="--s:var(--lime-soft)"><span class="dot">${I.ask}</span><h3>Pip</h3><p>Tell Pip what’s worrying you.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
     <a class="feat" href="#find-care" style="--s:var(--accent-soft)"><span class="dot">${I.people}</span><h3>Find care</h3><p>A paediatrician by video, within 48 hours of your GP’s referral.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
     <a class="feat" href="#adhd-care" style="--s:var(--violet-soft)"><span class="dot">${I.chart}</span><h3>ADHD care</h3><p>A clear plan, shared with your GP.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
     <a class="feat" href="#learn" style="--s:var(--sun-soft)"><span class="dot">${I.play}</span><h3>Learn</h3><p>Short guides on feeding, sleep, skin and more.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
    </div></div></section>
   <section class="sec alt"><div class="wrap"><div class="meet">
-    <div class="meet-text"><span class="meet-lab">${I.ask} Talk it through</span><h2>Tell Pip. Pip writes it down.</h2><p>Say what you’ve noticed, any time. You leave with a clear note for your GP.</p>
-     <a class="more big" href="#talk">Talk it through ${ARROW}</a>
+    <div class="meet-text"><span class="meet-lab">${I.ask} Pip</span><h2>Tell Pip. Pip writes it down.</h2><p>Say what you’ve noticed, any time. You leave with a clear note for your GP.</p>
+     <a class="more big" href="#talk">Talk to Pip ${ARROW}</a>
      <div class="who">${PIP_SVG}<div><b>Pip</b><span class="sub">AI helper, not a doctor</span></div></div></div>
     <div class="meet-art">${flowDiagram()}</div></div></div></section>
   <section class="sec"><div class="wrap closer"><span class="kick">The app</span><h2>Want Pip on your phone?</h2><p>The app isn’t built yet. Tell us you want it.</p>
@@ -580,9 +580,9 @@ const isQ=t=>/\?\s*$/.test(t)||/^\s*(how|what|why|when|should|is|are|can|could|d
 const infoFor=t=>{t=String(t).toLowerCase();return INFO.filter(x=>x.rx.test(t)).slice(0,2);};
 const infoCard=x=>`<a class="tinfo" href="${x.url}" target="_blank" rel="noopener"><span class="lab">${esc(x.by)}</span><b>${esc(x.title)}</b><span class="sub">${esc(x.covers)}</span><span class="more">Read it on ${x.url.split('/')[2].replace(/^www\./,'')} ${ARROW}</span></a>`;
 const infoCards=ids=>`<div class="tinfos">${ids.map(id=>INFO.find(x=>x.id===id)).filter(Boolean).map(infoCard).join('')}<p class="foot">General information, not advice about your child. Not yet checked by our doctors.</p></div>`;
-/* Tracking and pictures in Pip (30 Nov 2026). A parent can log sleep, feeds, wet nappies, weight, meals and mood from the
-   conversation, and Pip answers with a picture of the week. Pip keeps count and never judges a number: no targets, no ranges,
-   no "normal". The first six days are a sample week so the pictures are not empty; today is the parent's own. */
+/* Tracking (30 Nov 2026, its own page from 1 Dec). A parent can log sleep, feeds, wet nappies, weight, meals and mood, and
+   each one shows a picture of the week. The site keeps count and never judges a number: no targets, no ranges, no "normal".
+   The first six days are a sample week so the pictures are not empty; today is the parent's own. */
 const TRK=[['sleep','Sleep','hours',I.moon,'num','How many hours of sleep last night?',16,.5],['feeds','Feeds','feeds',I.bottle,'tap','feed'],['nappies','Wet nappies','nappies',I.spots,'tap','wet nappy'],['weight','Weight','kg',I.chart,'num','What is their weight, in kilograms?',80,.1],['meals','Meals','meals',I.bowl,'tap','meal'],['mood','Mood','',I.flag,'pick']];
 const MOODS=['Very upset','Upset','Unsettled','Calm','Happy'],WEEK=['Fri','Sat','Sun','Mon','Tue','Wed','Today'];
 function trackChart(id){
@@ -592,11 +592,20 @@ function trackChart(id){
   return `<div class="tchart"><span class="lab">${d[1]} this week${d[4]==='num'?', in '+d[2]:''}</span><svg viewBox="0 0 280 132" role="img" aria-label="${d[1]} for seven days: ${vals.map((v,i)=>WEEK[i]+' '+(v==null?'not logged':v)).join(', ')}">${vals.map((v,i)=>{const h=v?Math.max(4,Math.round(H*v/mx)):4,x=i*(bw+gap);return `<rect x="${x}" y="${H-h+16}" width="${bw}" height="${h}" rx="8" fill="var(--${i===6?'lime':'accent'})"${v?'':' opacity=".25"'}/><text x="${x+bw/2}" y="${H-h+11}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${v?v:''}</text><text x="${x+bw/2}" y="${H+32}" text-anchor="middle" font-size="11" fill="var(--muted)">${WEEK[i]}</text>`;}).join('')}</svg></div>`;
 }
 const flowDiagram=()=>`<div class="flowd" role="img" aria-label="You tell Pip, Pip writes it down, you show your GP"><span class="node main">${PIP_SVG}</span><i></i><span class="node">${I.folder}</span><i></i><span class="node">${I.people}</span></div><div class="flowl"><span>You tell Pip</span><span>Pip writes it down</span><span>You show your GP</span></div>`;
-function talkTrack(id,val){
-  const T=state.track,d=TRK.find(x=>x[0]===id);if(!d)return;state.talk.log.forEach(m=>{delete m.chips;delete m.next;delete m.ask;delete m.pick;});
-  if(d[4]==='tap'){T.today[id]++;T.own=true;talkSay('Logged. '+plural(T.today[id],d[5])+' today.',{chart:id});}
-  else if(val==null)talkSay(d[4]==='pick'?'How do they seem right now?':d[5],d[4]==='pick'?{pick:id}:{ask:id});
-  else{T.today[id]=val;T.own=true;talkSay(d[4]==='pick'?'Logged: '+MOODS[val].toLowerCase()+'.':'Logged: '+val+' '+d[2]+'.',{chart:id});}
+function trackLog(id,val){const T=state.track,d=TRK.find(x=>x[0]===id);if(!d)return;
+  if(d[4]==='tap')T.today[id]=Math.max(0,T.today[id]+(val===-1?-1:1));else T.today[id]=val;
+  T.own=true;toast(val===-1?'Removed':'Logged');}
+/* Track is its own page (1 Dec 2026), separate from Pip at the founder's request. Each card logs one thing and shows its week. */
+function trackView(){
+  const R=state.track;
+  const card=d=>{const id=d[0],v=R.today[id];
+    const ctl=d[4]==='tap'?`<div class="trow"><div class="stepper" role="group" aria-label="${d[1]} today"><button type="button" data-act="trk-less" data-id="${id}" aria-label="One fewer"${v?'':' disabled'}>−</button><output aria-live="polite">${v}</output><button type="button" data-act="trk" data-id="${id}" aria-label="Add one ${d[5]}">+</button></div><span class="sub">today</span></div>`
+      :d[4]==='num'?`<form class="tnum" data-trk="${id}"><label class="sr" for="trk-${id}">${d[5]}</label><input type="number" id="trk-${id}" min="0" max="${d[6]}" step="${d[7]}" inputmode="decimal" placeholder="${v==null?(id==='sleep'?'Hours last night':'Kilograms'):v+' '+d[2]}"><button class="primary" type="submit">Save</button></form>`
+      :`<div class="mpick2" role="group" aria-label="Mood today">${MOODS.map((x,i)=>`<button type="button" data-act="trk-mood" data-v="${i}" aria-pressed="${v===i}">${x}</button>`).join('')}</div>`;
+    return `<section class="panel tcard"><div class="row"><h2><span class="ti" aria-hidden="true">${d[3]}</span>${d[1]}</h2></div>${ctl}${trackChart(id)}</section>`;};
+  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Track</span><h1>Keep count of the everyday things</h1><p class="lead">Sleep, feeds, nappies, weight, meals and mood. A few taps a day.</p></div></div></div>${sparks}</section>
+  <section class="dash fam"><div class="wrap"><div class="trkpage">${TRK.map(card).join('')}</div>
+   <p class="foot trkfoot">${R.own?'':'The first six days are a sample week. '}PaedsMe keeps count. It doesn’t judge the numbers. Stays on this device.</p></div></section>`;
 }
 function talkSay(text,extra){state.talk.log.push(Object.assign({t:'pip',text},extra||{}));}
 function talkAsk(){const T=state.talk,q=TALK_Q[T.step-1];if(q)talkSay(q[1],{chips:q[2],n:T.step});}
@@ -624,19 +633,15 @@ function talkView(){
   const lines=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>`<div><dt>${TALK_LAB[k]}</dt><dd>${esc(d[k])}</dd></div>`).join('');
   const log=T.log.map((m,i)=>m.t==='note'
     ?`<div class="tnote"><span class="lab">Your note</span><dl>${lines(m.d)}</dl>${m.status==='pending'?`<div class="acts"><button type="button" class="primary" data-act="talk-save" data-i="${i}">Save this note</button><button type="button" data-act="talk-new">Start again</button></div>`:'<span class="chip good">Saved</span>'}</div>`
-    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.flow?flowDiagram():''}${m.chart?trackChart(m.chart):''}${m.ask?`<form class="tnum" id="trk-form" data-id="${m.ask}"><label class="sr" for="trk-num">Amount</label><input type="number" id="trk-num" min="0" max="${TRK.find(x=>x[0]===m.ask)[6]}" step="${TRK.find(x=>x[0]===m.ask)[7]}" inputmode="decimal"><button class="primary" type="submit">Save</button></form>`:''}${m.pick?`<div class="tchips">${MOODS.map((x,i)=>`<button type="button" data-act="trk-mood" data-v="${i}">${x}</button>`).join('')}</div>`:''}${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-urgent" data-id="${m.next}">An urgent video call</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
+    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.flow?flowDiagram():''}${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-urgent" data-id="${m.next}">An urgent video call</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
   const saved=T.saved.length?`<ul class="tsaved">${T.saved.map(n=>`<li><details><summary><b>${esc(n.d.what.length>70?n.d.what.slice(0,67)+'...':n.d.what)}</b><span class="sub">${fmt(n.date)}${n.d.age?' · '+esc(n.d.age):''}</span></summary><dl>${lines(n.d)}</dl></details><div class="acts"><button type="button" data-act="talk-gp" data-id="${n.id}">Copy for my GP</button><button type="button" data-act="talk-find" data-id="${n.id}">Find care with this</button></div></li>`).join('')}</ul>`
     :'<p class="sub">Your saved notes will show here.</p>';
   return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Pip · AI helper</span><h1>Tell Pip what is worrying you</h1><p class="lead">Pip listens and writes it down for you. Pip isn’t a doctor.</p></div></div></div>${sparks}</section>
   <section class="dash fam"><div class="wrap"><div class="talk">
     <section class="panel chat" aria-label="Conversation with Pip"><div class="chat-head">${PIP_SVG}<div><b>Pip</b><span class="sub">Here any time</span></div><button type="button" data-act="talk-new">New conversation</button></div>
      <div class="tlog" id="talk-log" role="log" aria-live="polite">${log}</div>
-     <div class="trkbar" role="group" aria-label="Track something"><span class="lab">Track</span>${TRK.map(d=>`<button type="button" data-act="trk" data-id="${d[0]}">${d[3]}<span>${d[1]}</span></button>`).join('')}</div>
      <form class="tform" id="talk-form"><label class="sr" for="talk-input">Your message to Pip</label><input type="text" id="talk-input" maxlength="400" autocomplete="off" placeholder="Type it the way you would say it"><button class="primary" type="submit">Send</button></form></section>
     <div class="fcol">
-     <section class="panel"><div class="row"><h2>This week</h2><span class="chip quiet">${state.track.own?'Your week':'Sample week'}</span></div>
-      <div class="trkgrid">${TRK.map(d=>{const v=state.track.today[d[0]];return `<button type="button" data-act="trk" data-id="${d[0]}"><span class="ti">${d[3]}</span><b>${d[0]==='mood'?(v==null?'Add':MOODS[v]):(v?v+(d[4]==='num'?' '+d[2]:''):d[4]==='tap'?'0':'Add')}</b><span class="sub">${d[1]} today</span></button>`;}).join('')}</div>
-      <p class="foot">Pip keeps count. It doesn’t judge the numbers.</p></section>
      <section class="panel"><div class="row"><h2>Your notes</h2><span class="chip quiet">${T.saved.length} saved</span></div>${saved}<p class="foot">Stays on this device.</p></section>
      <section class="panel urgent"><h2>If it is urgent</h2><ul class="plain"><li><b>000</b> if your child is in danger</li><li><b>1800 022 222</b> healthdirect, a nurse at any hour</li><li><b>13 43 25 84</b> 13 HEALTH, in Queensland</li></ul><a class="btn primary" href="#urgent">Speak to a paediatrician by video</a><p class="foot">A fee applies for the video call.</p></section>
     </div></div></div></section>`;
@@ -700,7 +705,7 @@ function urgentView(){
    <div class="grid3">
     <div class="wcard"><h3>000</h3><p class="sub">If your child is in danger.</p></div>
     <div class="wcard"><h3>1800 022 222</h3><p class="sub">healthdirect. A nurse answers at any hour. In Queensland, 13 HEALTH is 13 43 25 84.</p></div>
-    <a class="wcard linkish" href="#talk"><h3>Talk it through</h3><p class="sub">Tell Pip what’s worrying you.</p><span class="more">Talk to Pip ${ARROW}</span></a>
+    <a class="wcard linkish" href="#talk"><h3>Pip</h3><p class="sub">Tell Pip what’s worrying you.</p><span class="more">Talk to Pip ${ARROW}</span></a>
    </div>
    <p class="foot disc">${TELE.doctor} is a real paediatrician. This page is a draft he has not yet approved. Other doctors on this site are made up.</p></div></section>`;
 }
@@ -770,7 +775,7 @@ function findCare(){
     <div class="feat" style="--s:var(--violet-soft)"><span class="num">3</span><h3>Video visit in 48 hours</h3><p>A paediatrician sees you by video within 48 hours of the referral.</p></div>
     <div class="feat" style="--s:var(--lime-soft)"><span class="num">4</span><h3>A plan to follow</h3><p>The paediatrician makes the plan. Your GP looks after the rest, close to home.</p></div>
    </div>
-   <div class="cta-row center"><a class="btn primary cta" href="#talk">Talk it through with Pip ${ARROW}</a></div></div></section>`;
+   <div class="cta-row center"><a class="btn primary cta" href="#talk">Talk to Pip ${ARROW}</a></div></div></section>`;
 }
 
 const dxSite=r=>r==='Gold Coast'?'Hub, Southport':r==='Regional or remote'?'Home kit, posted to the family':'Spoke, '+r;
@@ -975,7 +980,7 @@ function teamView(){
     <p class="foot">Counts only. What a parent types on the request is not kept. The hours, the wait and the fee need the clinical lead's decision.</p></section>
    <section class="panel"><div class="row"><h2>Demand for the app</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <div class="kpis flat">${kpi('Site visits',w.visits.toLocaleString('en-AU'),'synthetic')}${kpi('Get the app taps',taps,Math.round(100*taps/w.visits)+'% of visits')}${kpi('Joined the list',w.joins,Math.round(100*w.joins/taps)+'% of taps')}${kpi('Most wanted',use[0],use[1]+' picks')}</div>
-    <p class="sub">Taps by place: header ${w.taps.header}, home page ${w.taps.home}, Talk it through ${w.taps.talk}. Phones: iPhone ${w.plat.iPhone}, Android ${w.plat.Android}.</p>
+    <p class="sub">Taps by place: header ${w.taps.header}, home page ${w.taps.home}, Pip ${w.taps.talk}. Phones: iPhone ${w.plat.iPhone}, Android ${w.plat.Android}.</p>
     <p class="foot">The website comes first. The app is built only if these numbers say families want it. The pass mark is not set yet, and no email is kept in this prototype.</p></section>
    <div class="cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
     <section class="panel"><h2>How a referral moves</h2><ol class="plain"><li>The parent is matched and asks for a referral.</li><li>PaedsMe drafts the request. The GP writes the referral.</li><li>It reaches the clinic's practice manager by email, in one format for every clinic.</li><li>The clinic triages by hand. PaedsMe does not triage.</li><li>Rapid Access: a video visit within 48 hours, or in person if local.</li></ol>
@@ -994,7 +999,7 @@ function paintHero(){const v=view(),b=document.querySelector('#view .band');if(!
   const inl=!!b.querySelector('.band-side .panel,.band-side .fcard,.band-side form');b.classList.add(inl?'photo-in':'photo');b.style.setProperty('--hero','url("'+HERO[v]+'")');
   const host=inl?b.querySelector('.band-text'):null;if(host&&!host.querySelector('.hero-pic')){const im=document.createElement('img');im.className='hero-pic';im.alt='';im.src=HERO[v];host.appendChild(im);}}
 function loadHeroes(){Object.keys(HERO).forEach(k=>{const im=new Image();im.onload=()=>{heroOk[k]=true;paintHero();};im.src=HERO[k];});}
-const VIEWS={home,talk:talkView,urgent:urgentView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
+const VIEWS={home,talk:talkView,track:trackView,urgent:urgentView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
 function render(){
   const v=VIEWS[location.hash.slice(1)]?location.hash.slice(1):'home';
   document.querySelectorAll('.tabs a').forEach(a=>{if(a.getAttribute('href')==='#'+v){a.setAttribute('aria-current','page');const n=a.parentElement;if(n&&n.scrollWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-n.offsetLeft-(n.clientWidth-a.offsetWidth)/2;}else a.removeAttribute('aria-current');});
@@ -1053,8 +1058,9 @@ document.addEventListener('click',e=>{
   else if(a==='sc-done'){const s=state.shared[+b.dataset.i];s.gpDue=addDays(TODAY,s.every);s.script=addDays(TODAY,s.every);toast('Visit summary sent to '+s.paed);}
   else if(a==='sc-esc'){const s=state.shared[+b.dataset.i];s.asked=true;state.escal.push({c:s.c,g:s.g,from:'Dr R. Mehta, GP',date:TODAY,why:'Asked for a review before the yearly date.'});toast('Sent. '+s.paed+' will offer a video time.');}
   else if(a==='talk-chip'){talkSend(b.textContent);render.focusTalk=true;}
-  else if(a==='trk'){talkTrack(b.dataset.id);}
-  else if(a==='trk-mood'){talkTrack('mood',+b.dataset.v);}
+  else if(a==='trk'){trackLog(b.dataset.id);}
+  else if(a==='trk-less'){trackLog(b.dataset.id,-1);}
+  else if(a==='trk-mood'){trackLog('mood',+b.dataset.v);}
   else if(a==='talk-save'){talkSave(+b.dataset.i);}
   else if(a==='talk-new'){Object.assign(state.talk,{log:[],step:0,draft:{}});}
   else if(a==='talk-nurse'){state.talk.log.forEach(m=>{delete m.next;});talkSay('healthdirect is 1800 022 222, at any hour, and a nurse answers. In Queensland you can also call 13 HEALTH on 13 43 25 84. If your child is in danger, call 000.');}
@@ -1125,7 +1131,7 @@ document.addEventListener('submit',e=>{
     if(!U.age){toast('Choose your child\'s age');return;}
     if(!U.what){toast('Say what is happening first');return;}
     U.sent=true;U.count++;toast('Request sent. This is a demo, so nothing was charged.');window.scrollTo(0,0);render();return;}
-  if(e.target.id==='trk-form'){const id=e.target.dataset.id,d=TRK.find(x=>x[0]===id),v=parseFloat($('trk-num').value);if(!(v>0)||v>d[6]){toast('Type a number first');return;}talkTrack(id,Math.round(v*10)/10);render();return;}
+  if(e.target.dataset&&e.target.dataset.trk){const id=e.target.dataset.trk,d=TRK.find(x=>x[0]===id),v=parseFloat($('trk-'+id).value);if(!(v>0)||v>d[6]){toast('Type a number first');return;}trackLog(id,Math.round(v*10)/10);render();return;}
   if(e.target.id==='talk-form'){const v=$('talk-input').value;if(!v.trim()){toast('Type a few words first');return;}talkSend(v);render.focusTalk=true;render();return;}
   if(e.target.id==='wait-form'){const em=$('wait-email').value.trim(),w=state.wait;if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Type your email first');return;}
     w.joined=true;w.joins++;w.platform=(document.querySelector('input[name="wplat"]:checked')||{}).value||null;if(w.platform)w.plat[w.platform]++;
@@ -1144,7 +1150,7 @@ const AGE={mia:4,arjun:9,zoe:13,ivy:0};
 const pip={live:false,sample:null,tts:null,voice:false,busy:false,ctl:null,log:[],turns:[],greeted:false};
 const role=()=>{const v=location.hash.slice(1);return v==='gp-referral'?'gp':(v==='diagnostics'||v==='clinic')?'staff':'parent';};
 const ROLE={
- parent:{who:'Helping a parent or carer',about:'a parent or carer using the PaedsMe website',chips:['Talk it through','Find a specialist','Next visit?','Talk to a person']},
+ parent:{who:'Helping a parent or carer',about:'a parent or carer using the PaedsMe website',chips:['Talk to Pip','Find a specialist','Next visit?','Talk to a person']},
  gp:{who:'Helping a referring GP',about:'a GP using the referral portal',chips:['Where are my referrals up to?','Who is due a review?','Does the referral need a named doctor?','Talk to a person']},
  staff:{who:'Helping clinic and hub staff',about:'clinic or diagnostics hub staff',chips:['Which reviews are overdue?','Prompt families with expiring referrals','What is waiting for a report?']}};
 const EMERG=/\b(000|emergency|not breathing|stopped breathing|isn'?t breathing|struggling to breathe|choking|not responding|can'?t breathe|cannot breathe|unconscious|unresponsive|turning blue|won'?t wake|overdose|suicid|seizure (that )?(won'?t|will not|isn'?t|is not) stop)/i;
@@ -1211,7 +1217,7 @@ Rules:
 - A referral to a private specialist does not need to name the doctor, and a GP referral usually lasts 12 months from the first specialist visit.
 - ADHD shared care fees are proposals from the clinical lead. When you mention them, say they are approximate and not a quote.
 - Parents' notes are a record for the clinician. Never say whether something a parent noticed is normal or worrying.
-- Feeding, sleep and rash logs are a record too. Never say what a rash is, or whether feeding or sleep is on track. Point to the Talk it through page, where the parent can say it in their own words.
+- Feeding, sleep and rash logs are a record too. Never say what a rash is, or whether feeding or sleep is on track. Point to the Pip page, where the parent can say it in their own words.
 - Test results: only repeat the doctor's note to the family, word for word. Never explain, interpret or guess a result. If a result is held for a conversation, say the doctor will go through it and offer to ask for an earlier call.
 - Use only the app state below. If you do not know, say so and offer a navigator call.
 - Reply in plain text with no markdown, under 70 words, warm and direct.
@@ -1235,7 +1241,7 @@ function scripted(text){
   const q=text.toLowerCase(),r=role(),k=state.kids[state.child],ap=kidAppts(),nx=ap[0];
   const tryP=(a,ok)=>{try{propose(a);const c=pip.log.pop();say(ok);pip.log.push(c);}catch(e){say(e.message);}};
   if(r==='parent'&&/urgent|video call|telehealth|speak to a paediatric|today|right now/.test(q)){location.hash='urgent';return say('If your child is in danger, call 000. To speak to a paediatrician by video, open Urgent video call. It is with '+TELE.doctor+' and a fee applies.');}
-  if(r==='parent'&&/talk it through|worried|worry|anxious|scared/.test(q)){location.hash='talk';return say('Open Talk it through and tell me what is worrying you. I will help you get it down clearly.');}
+  if(r==='parent'&&/talk to pip|talk it through|worried|worry|anxious|scared/.test(q)){location.hash='talk';return say('Open the Pip page and tell me what is worrying you. I will help you get it down clearly.');}
   if(/human|person|navigator|call me|speak to|talk to/.test(q))return tryP({kind:'navigator_callback',note:''},'I can arrange a call from a care navigator. Confirm below and a person calls back.');
   if(r==='parent'&&/adhd|shared care/.test(q))return say(`ADHD care is shared. A paediatrician does the assessment over two visits, about ${money(CARE.first[0])} then ${money(CARE.second[0])} before Medicare. Your GP does the regular visits, about ${money(CARE.gp[0])} each. The paediatrician reviews twice a year. These figures are indicative, not a quote. The ADHD care screen has the detail.`);
   if(r==='staff'){
@@ -1252,7 +1258,7 @@ function scripted(text){
     return say('Fill in the form on this screen and the likely matches update as you go. I can also tell you where your referrals are up to.');
   }
   if(/result|test|eeg|ecg|monitor|brain wave|heart trace/.test(q)){const ts=kidTests(state.child);return say(ts.length?ts.map(t=>TINFO[t.type].name+': '+(t.s===6?(t.result.mode==='note'?sdoc(t)+' says: '+t.result.plain:'result ready. '+sdoc(t)+' will go through it with you.'):tstatus(t)[0].toLowerCase()+'. '+twhen(t))).join('\n\n'):'No tests are booked.');}
-  if(/rash|feed|bottle|breast|nap\b|solids/.test(q))return say('Tell me about it on the Talk it through page and I will write it down in your words for your doctor. I cannot say what a rash is, or whether feeding or sleep is on track. Your care team does that.');
+  if(/rash|feed|bottle|breast|nap\b|solids/.test(q))return say('You can keep count of feeds, sleep and more on the Track page. For a worry, tell me on the Pip page and I will write it down in your words for your doctor. I cannot say what a rash is, or whether feeding or sleep is on track. Your care team does that.');
   if(/resched|move|change.*(appointment|time|date)|cancel/.test(q))return tryP({kind:'reschedule',appointment:''},'I can ask the clinic for new times. Confirm below.');
   if(/referral|renew|expir/.test(q)){const left=days(k.refUntil);return left<60?tryP({kind:'renew_referral'},`${k.name}'s referral ends ${fmt(k.refUntil)}, in ${left} days. I can ask your GP to renew it.`):say(`${k.name}'s referral is valid until ${fmt(k.refUntil)}, ${left} days from now. Nothing to do yet.`);}
   if(/prep|prepare|bring|ready/.test(q))return say(nx?`For ${nx.what} on ${fmt(nx.date)}:\n- ${nx.prep.join('\n- ')}`:'There is nothing booked to prepare for.');
