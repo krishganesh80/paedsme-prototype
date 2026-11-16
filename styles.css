@@ -714,3 +714,19 @@ body[data-view="talk"] .pip-fab,body[data-view="talk"] .pip{display:none!importa
 .pres .acts{flex-direction:row;align-items:center}
 .pres .acts button{flex:0 0 auto;width:auto}
 @media (max-width:620px){.pres .acts button{flex:1 1 40%}}
+
+/* Urgent video call (22 Nov 2026). */
+.tabs a.tab-urgent{color:var(--ink);box-shadow:inset 0 0 0 2px var(--sun)}
+.tabs a.tab-urgent[aria-current="page"]{background:var(--sun);box-shadow:none;color:#3E2A00}
+.alarm{background:var(--surface);border-left:6px solid var(--orange);border-radius:14px;padding:12px 16px;font-size:1.02rem;max-width:54ch}
+.docline{display:flex;align-items:center;gap:14px}
+.docline div{display:flex;flex-direction:column}
+.docline b{font-family:var(--display);font-size:1.2rem}
+.feebox{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:16px;background:var(--bg)}
+.feebox b{font-family:var(--display);font-size:1.5rem}
+.strip{padding-block:clamp(20px,3vw,32px) 0}
+.urgentlink{background:var(--sun-soft);border:2px solid var(--sun)}
+a.wcard.linkish{text-decoration:none;color:var(--ink);transition:transform .15s}
+a.wcard.linkish:hover{transform:translateY(-3px)}
+.panel.urgent a.btn{align-self:flex-start}
+@media (prefers-reduced-motion:reduce){a.wcard.linkish:hover{transform:none}}

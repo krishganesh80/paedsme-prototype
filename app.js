@@ -99,6 +99,8 @@ state.feedType=null;
 /* Demand for the app. The website comes first; the app is built only if families ask for it. Counts only: an email typed into the list is never kept. */
 state.wait={joined:false,platform:null,visits:1240,taps:{header:96,home:71,talk:45},joins:87,plat:{iPhone:52,Android:35},uses:{'Talking a worry through':63,'Notes for the doctor':57,'Feeding':41,'Sleep':48,'Rashes':33,'Finding care':38,'Videos and guides':22}};
 /* Talk it through: the conversation with Pip, the note being built, and the notes the parent has saved. */
+/* Urgent video call: the request a parent is filling in. Counts only; nothing typed here is sent anywhere. */
+state.urgent={ok:false,age:'',what:'',note:false,sent:false,count:14};
 /* Pip presents: which line is showing, whether it is playing, and the viewer's sound and transcript choices. */
 state.pres={i:0,on:false,sound:true,text:false,done:false};
 state.talk={log:[],step:0,draft:{},saved:[],seq:0,asked:{sleep:38,skin:44,feeding:29,nd:33,unwell:21,none:17}};
@@ -516,6 +518,7 @@ function home(){
       <div class="tmsg me">About three weeks ago.</div>
       <div class="tmsg bot">How often does it happen?</div>
       <a class="more" href="#talk">Start your own ${ARROW}</a></div></div></div>${sparks}</section>
+  <section class="strip"><div class="wrap"><a class="linkcard urgentlink" href="#urgent"><span><b>Need a paediatrician soon?</b><span class="sub">Ask for a video call with ${TELE.doctor}, for a fee. In danger, call 000.</span></span>${ARROW}</a></div></section>
   <section class="sec"><div class="wrap">${secHead('What you can do here','One place, from the first worry to the plan','Start anywhere. Each part works without the others.')}
    <div class="grid4">
     <a class="feat" href="#talk" style="--s:var(--lime-soft)"><span class="dot">${I.ask}</span><h3>Talk it through</h3><p>Tell Pip what is worrying you. You leave with a clear note in your own words.</p><span class="more">Talk to Pip ${ARROW}</span></a>
@@ -598,7 +601,7 @@ function talkView(){
   const lines=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>`<div><dt>${TALK_LAB[k]}</dt><dd>${esc(d[k])}</dd></div>`).join('');
   const log=T.log.map((m,i)=>m.t==='note'
     ?`<div class="tnote"><span class="lab">Your note</span><dl>${lines(m.d)}</dl>${m.status==='pending'?`<div class="acts"><button type="button" class="primary" data-act="talk-save" data-i="${i}">Save this note</button><button type="button" data-act="talk-new">Start again</button></div>`:'<span class="chip good">Saved</span>'}</div>`
-    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
+    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-urgent" data-id="${m.next}">An urgent video call</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
   const saved=T.saved.length?`<ul class="tsaved">${T.saved.map(n=>`<li><details><summary><b>${esc(n.d.what.length>70?n.d.what.slice(0,67)+'...':n.d.what)}</b><span class="sub">${fmt(n.date)}${n.d.age?' · '+esc(n.d.age):''}</span></summary><dl>${lines(n.d)}</dl></details><div class="acts"><button type="button" data-act="talk-gp" data-id="${n.id}">Copy for my GP</button><button type="button" data-act="talk-find" data-id="${n.id}">Find care with this</button></div></li>`).join('')}</ul>`
     :'<p class="sub">Nothing saved yet. A note you save with Pip appears here, ready to copy for your GP.</p>';
   return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Pip · AI companion · scripted demo</span><h1>Tell Pip what is worrying you</h1><p class="lead">Pip listens, helps you get it down clearly, and points you to the right person. Pip is not a doctor and never says what something is.</p></div></div></div>${sparks}</section>
@@ -608,7 +611,7 @@ function talkView(){
      <form class="tform" id="talk-form"><label class="sr" for="talk-input">Your message to Pip</label><input type="text" id="talk-input" maxlength="400" autocomplete="off" placeholder="Type it the way you would say it"><button class="primary" type="submit">Send</button></form></section>
     <div class="fcol">
      <section class="panel"><div class="row"><h2>Your notes</h2><span class="chip quiet">${T.saved.length} saved</span></div>${saved}<p class="foot">Kept in this browser only. Nothing is uploaded, and nothing is scored.</p></section>
-     <section class="panel urgent"><h2>If it is urgent</h2><ul class="plain"><li><b>000</b> if your child is in danger</li><li><b>1800 022 222</b> healthdirect, a nurse at any hour</li><li><b>13 43 25 84</b> 13 HEALTH, in Queensland</li></ul><p class="foot">Pip does not decide how urgent something is. Draft wording, for a paediatrician to sign off.</p></section>
+     <section class="panel urgent"><h2>If it is urgent</h2><ul class="plain"><li><b>000</b> if your child is in danger</li><li><b>1800 022 222</b> healthdirect, a nurse at any hour</li><li><b>13 43 25 84</b> 13 HEALTH, in Queensland</li></ul><a class="btn primary" href="#urgent">Speak to a paediatrician by video</a><p class="foot">A fee applies for the video call. Pip does not decide how urgent something is. Draft wording, for a paediatrician to sign off.</p></section>
      <section class="panel nudge"><div class="txt"><h2>Want Pip on your phone?</h2><p class="sub">The app is not built yet. Tell us you want it and we will build it sooner.</p></div><a class="btn primary cta" href="#get-app" data-cta="talk">Get the app ${ARROW}</a></section>
     </div></div></div></section>`;
 }
@@ -634,6 +637,47 @@ function getApp(){
     <div class="feat" style="--s:var(--violet-soft)"><span class="dot">${I.cal}</span><h3>A nudge before the visit</h3><p>A reminder to send your notes a few days before each appointment.</p></div>
    </div>
    <div class="cta-row center"><a class="btn cta" href="#talk">Talk to Pip on the website</a></div></div></section>`;
+}
+/* Urgent video call (22 Nov 2026). When it cannot wait for a referral and it is not an emergency, a parent can ask for a
+   paid video call with the clinical lead, who is a real paediatrician and is named at the founder's request. The fee is not
+   set, so none is shown. The page leads with 000, the parent must tick that it is not an emergency, and urgent words in the
+   description stop the request. Nothing is sent and no payment is taken. All wording is a draft for him to approve. */
+const TELE={doctor:'Dr Harry Singh',short:'Dr Singh',role:'Paediatrician',fee:null};
+const TELE_AGES=['Under 1','1 to 2','3 to 5','6 to 11','12 to 17'];
+function urgentView(){
+  const U=state.urgent,has=state.talk.saved.length>0,fee=TELE.fee?'About '+money(TELE.fee):'To be set';
+  const card=U.sent?`<div class="panel"><span class="chip good">Request sent</span><h2>${TELE.short}'s team will send your video link</h2>
+     <p>Keep your phone nearby, and have your notes, photos and videos open.</p>
+     <p class="note"><b>If your child is in danger at any time, call 000.</b></p>
+     <p class="foot">This is a prototype. Nothing was sent to anyone, and nothing was charged.</p><div><button type="button" data-act="urg-reset">Start again</button></div></div>`
+   :`<form class="panel" id="urgent-form" novalidate><h2>Ask for a video call</h2>
+     <label class="check"><input type="checkbox" id="urg-ok"${U.ok?' checked':''}><span>This is not an emergency. If my child were in danger, I would call 000.</span></label>
+     <div class="field"><label for="urg-age">Your child's age</label><select id="urg-age">${opts([['','Choose'],...TELE_AGES],U.age)}</select></div>
+     <div class="field"><label for="urg-what">What is happening, in your own words</label><textarea id="urg-what" maxlength="400" placeholder="Type it the way you would say it">${esc(U.what)}</textarea></div>
+     ${has?`<label class="check"><input type="checkbox" id="urg-note"${U.note?' checked':''}><span>Send my latest note from Pip as well</span></label>`:''}
+     <div class="feebox"><span class="lab">Fee</span><b>${fee}</b><span class="sub">You see the fee before you pay. Without a GP referral, Medicare may not pay any of it back.</span></div>
+     <div><button class="primary cta" type="submit">Request a video call ${ARROW}</button></div>
+     <p class="foot">Prototype: nothing is sent, and no payment is taken.</p></form>`;
+  return `<section class="band"><div class="wrap band-2"><div class="band-text">
+     <span class="eyebrow">Urgent video call · proposed, draft</span>
+     <h1>Need a paediatrician soon? <em>Talk by video</em></h1>
+     <p class="lead">A video call with ${TELE.doctor}, paediatrician, for a fee. For when it cannot wait for a referral, and it is not an emergency.</p>
+     <p class="alarm"><b>In danger? Call 000 now.</b> A video call is not for emergencies.</p>
+     <div class="docline"><span class="ava2" aria-hidden="true">HS</span><div><b>${TELE.doctor}</b><span class="sub">${TELE.role} · video call · a fee applies</span></div></div></div>
+    <div class="band-side">${card}</div></div>${sparks}</section>
+  <section class="sec"><div class="wrap">${secHead('How it works','Three steps to a video call','A proposed model. The hours, the wait and the fee are not set yet.')}
+   <div class="grid3">
+    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>You ask</h3><p>Say what is happening in your own words. You see the fee before you pay.</p></div>
+    <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>You get a link</h3><p>${TELE.short}'s team sends a video link to your phone.</p></div>
+    <div class="feat" style="--s:var(--lime-soft)"><span class="num">3</span><h3>You talk it through</h3><p>${TELE.short} talks with you and your child, and sets the plan. With your permission, a summary goes to your GP.</p></div>
+   </div></div></section>
+  <section class="sec alt"><div class="wrap">${secHead('Other doors','Not sure this is the right one?')}
+   <div class="grid3">
+    <div class="wcard"><h3>000</h3><p class="sub">If your child is in danger. Always the first call.</p></div>
+    <div class="wcard"><h3>1800 022 222</h3><p class="sub">healthdirect. A nurse answers at any hour. In Queensland, 13 HEALTH is 13 43 25 84.</p></div>
+    <a class="wcard linkish" href="#talk"><h3>Talk it through</h3><p class="sub">Tell Pip what is worrying you and leave with a clear note for your GP.</p><span class="more">Talk to Pip ${ARROW}</span></a>
+   </div>
+   <p class="foot disc">${TELE.doctor} is a real paediatrician. Every other clinician on this site is made up. This page is a draft: he has not approved it, and a lawyer has not reviewed it.</p></div></section>`;
 }
 function findCare(){
   const q=state.q, m=match(q), id=reqKey(), k=state.kids[id]||{name:'another child'}, rq=state.req[id];
@@ -897,6 +941,9 @@ function teamView(){
    <section class="panel"><div class="row"><h2>What parents ask Pip</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <ul class="eng">${[...LEARN.map(t=>[t.full,state.talk.asked[t.id]||0,I[t.ico]]),['No trusted page yet',state.talk.asked.none||0,I.ask]].map((r,i,all)=>`<li><span class="ti" style="--s:var(--${TINT[i%5]}-soft)" aria-hidden="true">${r[2]}</span><div class="txt"><div class="row"><b>${r[0]}</b><span class="sub">${plural(r[1],'question')}</span></div><div class="bar"><i style="width:${Math.round(100*r[1]/Math.max(1,...all.map(x=>x[1])))}%"></i></div></div></li>`).join('')}</ul>
     <p class="foot">Counts by topic only. The questions themselves are not kept. The last row is where a signed-off answer is most needed.</p></section>
+   <section class="panel"><div class="row"><h2>Urgent video calls</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
+    <div class="kpis flat">${kpi('Requests',state.urgent.count,'asked for a video call')}${kpi('Fee',TELE.fee?money(TELE.fee):'Not set','to be agreed')}${kpi('With',TELE.short,'the only clinician offered')}${kpi('Payments','None','the demo takes no money')}</div>
+    <p class="foot">Counts only. What a parent types on the request is not kept. The hours, the wait and the fee need the clinical lead's decision.</p></section>
    <section class="panel"><div class="row"><h2>Demand for the app</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <div class="kpis flat">${kpi('Site visits',w.visits.toLocaleString('en-AU'),'synthetic')}${kpi('Get the app taps',taps,Math.round(100*taps/w.visits)+'% of visits')}${kpi('Joined the list',w.joins,Math.round(100*w.joins/taps)+'% of taps')}${kpi('Most wanted',use[0],use[1]+' picks')}</div>
     <p class="sub">Taps by place: header ${w.taps.header}, home page ${w.taps.home}, Talk it through ${w.taps.talk}. Phones: iPhone ${w.plat.iPhone}, Android ${w.plat.Android}.</p>
@@ -909,7 +956,7 @@ function teamView(){
    </div>
   </div></section>`;
 }
-const VIEWS={home,talk:talkView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
+const VIEWS={home,talk:talkView,urgent:urgentView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
 function render(){
   const v=VIEWS[location.hash.slice(1)]?location.hash.slice(1):'home';
   document.querySelectorAll('.tabs a').forEach(a=>{if(a.getAttribute('href')==='#'+v){a.setAttribute('aria-current','page');const n=a.parentElement;if(n&&n.scrollWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-n.offsetLeft-(n.clientWidth-a.offsetWidth)/2;}else a.removeAttribute('aria-current');});
@@ -973,6 +1020,8 @@ document.addEventListener('click',e=>{
   else if(a==='talk-gp'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);if(!n)return;const t='For my GP, from a parent\n'+noteText(n.d);(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copied. Paste it into a message, or show it at the visit.'),()=>toast('Open the note under Your notes and show it at the visit.'));
     if(state.talk.log.some(m=>m.next)){state.talk.log.forEach(m=>{delete m.next;});talkSay('Copied for your GP. Paste it into a message or show it at the visit. If you would like a paediatrician, your GP writes the referral.');}}
   else if(a==='talk-find'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);if(!n)return;hear(n.d.what+(TALK_AGE[n.d.age]==null&&n.d.age?'. '+n.d.age:''));if(TALK_AGE[n.d.age]!=null)state.q.age=TALK_AGE[n.d.age];state.q.who='other';location.hash='find-care';return;}
+  else if(a==='talk-urgent'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);if(n)Object.assign(state.urgent,{what:n.d.what,age:TELE_AGES.includes(n.d.age)?n.d.age:'',note:true,sent:false});location.hash='urgent';return;}
+  else if(a==='urg-reset'){Object.assign(state.urgent,{ok:false,age:'',what:'',note:false,sent:false});}
   else if(a==='talk-info'){const n=state.talk.saved.find(x=>x.id===b.dataset.id),hits=n?infoFor(n.d.what):[];state.talk.log.forEach(m=>{delete m.next;});
     if(hits.length)talkSay('Here is general information from a trusted Australian source. It is not about your child, and your GP or a nurse can tell you more.',{info:hits.map(x=>x.id)});else talkSay('I do not have a trusted page on that yet. A nurse can talk it through with you on 1800 022 222.');}
   else if(a==='talk-learn'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);state.learnOpen=talkTopic(n?n.d.what:'');state.playing=null;location.hash='learn';return;}
@@ -994,6 +1043,10 @@ document.addEventListener('change',e=>{
   if(t.dataset.prep){state.prepDone[t.dataset.prep]=t.checked;state.prepOpen=true;render();return;}
   if(t.dataset.ms){state.milestones[+t.dataset.ms][1]=t.checked;render();return;}
   if(t.id==='media-file'){pickMedia(t.files[0]);const s=$('mslot');if(s)s.innerHTML=mediaSlot(s.dataset.label,s.dataset.accept);return;}
+  if(t.id==='urg-ok'){state.urgent.ok=t.checked;return;}
+  if(t.id==='urg-age'){state.urgent.age=t.value;return;}
+  if(t.id==='urg-what'){state.urgent.what=t.value.slice(0,400);return;}
+  if(t.id==='urg-note'){state.urgent.note=t.checked;return;}
   if(t.id==='cm-complex'){state.cm.complex=t.checked;render();return;}
   if(t.name==='ftype'){state.feedType=t.value;render();return;}
   if(t.id==='q-said'){state.q.said=t.value;return;}
@@ -1024,6 +1077,12 @@ document.addEventListener('submit',e=>{
     else if(state.quick==='win'){state.wins[id].unshift(v);toast('Great!');}
     else{state.questions[id].push(v);toast('Saved for the visit');}
     state.quick=null;render();return;}
+  if(e.target.id==='urgent-form'){const U=state.urgent;U.ok=$('urg-ok').checked;U.age=$('urg-age').value;U.what=$('urg-what').value.trim().slice(0,400);const nt=$('urg-note');U.note=!!(nt&&nt.checked);
+    if(EMERG.test(U.what)){toast('If your child is in danger, call 000 now. A video call is not for emergencies.');return;}
+    if(!U.ok){toast('Tick the first box. This page is not for emergencies.');return;}
+    if(!U.age){toast('Choose your child\'s age');return;}
+    if(!U.what){toast('Say what is happening first');return;}
+    U.sent=true;U.count++;toast('Request sent. This is a demo, so nothing was charged.');window.scrollTo(0,0);render();return;}
   if(e.target.id==='talk-form'){const v=$('talk-input').value;if(!v.trim()){toast('Type a few words first');return;}talkSend(v);render.focusTalk=true;render();return;}
   if(e.target.id==='wait-form'){const em=$('wait-email').value.trim(),w=state.wait;if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Type your email first');return;}
     w.joined=true;w.joins++;w.platform=(document.querySelector('input[name="wplat"]:checked')||{}).value||null;if(w.platform)w.plat[w.platform]++;
@@ -1127,6 +1186,7 @@ function speak(text){if(pip.voice&&pip.tts)pip.tts.speak(String(text).slice(0,19
 function scripted(text){
   const q=text.toLowerCase(),r=role(),k=state.kids[state.child],ap=kidAppts(),nx=ap[0];
   const tryP=(a,ok)=>{try{propose(a);const c=pip.log.pop();say(ok);pip.log.push(c);}catch(e){say(e.message);}};
+  if(r==='parent'&&/urgent|video call|telehealth|speak to a paediatric|today|right now/.test(q)){location.hash='urgent';return say('If your child is in danger, call 000. To speak to a paediatrician by video, open Urgent video call. It is with '+TELE.doctor+' and a fee applies.');}
   if(r==='parent'&&/talk it through|worried|worry|anxious|scared/.test(q)){location.hash='talk';return say('Open Talk it through and tell me what is worrying you. I will help you get it down clearly.');}
   if(/human|person|navigator|call me|speak to|talk to/.test(q))return tryP({kind:'navigator_callback',note:''},'I can arrange a call from a care navigator. Confirm below and a person calls back.');
   if(r==='parent'&&/adhd|shared care/.test(q))return say(`ADHD care is shared. A paediatrician does the assessment over two visits, about ${money(CARE.first[0])} then ${money(CARE.second[0])} before Medicare. Your GP does the regular visits, about ${money(CARE.gp[0])} each. The paediatrician reviews twice a year. These figures are indicative, not a quote. The ADHD care screen has the detail.`);
@@ -1206,7 +1266,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)op
 })();
 if(PARKED_ON){const n=document.querySelector('.tabs');if(n)n.insertAdjacentHTML('beforeend','<a href="#family">My family</a><a href="#gp-referral">GP referral</a><a href="#diagnostics">Diagnostics hub</a><a href="#clinic">Clinic tools</a>');}
 window.addEventListener('hashchange',()=>{presStop();state.pres.on=false;render();renderPip();window.scrollTo(0,0);});
-function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;render();renderPip();}
+function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked&&saved.urgent)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;render();renderPip();}
 try{if('speechSynthesis' in window){speechSynthesis.getVoices();}}catch(e){}
 window.claude?.hot?.snapshot?.(()=>state);
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
