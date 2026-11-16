@@ -100,6 +100,8 @@ state.feedType=null;
 state.wait={joined:false,platform:null,visits:1240,taps:{header:96,home:71,talk:45},joins:87,plat:{iPhone:52,Android:35},uses:{'Talking a worry through':63,'Notes for the doctor':57,'Feeding':41,'Sleep':48,'Rashes':33,'Finding care':38,'Videos and guides':22}};
 /* Talk it through: the conversation with Pip, the note being built, and the notes the parent has saved. */
 /* Urgent video call: the request a parent is filling in. Counts only; nothing typed here is sent anywhere. */
+/* Folded sections the visitor has opened. */
+state.fold={};
 state.urgent={ok:false,age:'',what:'',note:false,sent:false,count:14};
 /* Pip presents: which line is showing, whether it is playing, and the viewer's sound and transcript choices. */
 state.pres={i:0,on:false,sound:true,text:false,done:false};
@@ -449,7 +451,7 @@ function presStage(){
      <div class="bar"><i id="pres-bar" style="width:${Math.round(100*(P.i+1)/lines.length)}%"></i></div>
      <div class="acts"><button type="button" class="primary" id="pres-toggle" data-act="pres-toggle">${P.done?'Play again':P.on?'Pause':'Play'}</button><button type="button" data-act="pres-sound" aria-pressed="${P.sound}">${P.sound?'Sound on':'Sound off'}</button><button type="button" data-act="pres-text" aria-pressed="${P.text}">Transcript</button><button type="button" data-act="pres-close">Close</button></div>
      ${P.text?`<ol class="pres-script">${lines.map((l,i)=>`<li class="${i===P.i?'now':''}">${esc(l)}</li>`).join('')}</ol>`:''}
-     <p class="foot">${ready?`Script by ${esc(m.who)}. A sample about how things work, with no health advice. It stays a draft until a paediatrician approves it.`:`Script by ${esc(m.who)}, waiting for a paediatrician's approval.`} If your browser has no voice, the captions still play.</p></div></div>`;
+     <p class="foot">${ready?`Script by ${esc(m.who)}. A sample, with no health advice.`:`Script by ${esc(m.who)}, waiting for a paediatrician's approval.`}</p></div></div>`;
 }
 function learnView(){
   const id=state.child,k=state.kids[id];
@@ -459,10 +461,10 @@ function learnView(){
        ${t.urgent?'<p class="note"><b>If your child is in danger, call 000.</b> For advice from a nurse in Queensland, call 13 HEALTH (13 43 25 84).</p>':''}
        ${presStage()}<ul class="media">${t.items.map((e,i)=>{const pid=t.id+'-'+i,pl=state.playing===pid,vid=e[0]==='v';return `<li><button type="button" class="mcard" data-act="play" data-ep="${pid}" aria-pressed="${pl}" style="--s:var(--${TINT[(ti+i)%5]}-soft)"><span class="mth">${vid?(pl?I.pause:I.play):I.photos}<span class="dur">${vid?e[2]+' min':e[2]+' photos'}</span>${pl&&!vid?'<span class="prog"><i></i></span>':''}</span><b>${esc(e[1])}</b><span class="sub">${pl?(vid?'Pip is presenting':'Showing sample photos'):esc(e[3])}</span></button></li>`;}).join('')}</ul>
        <div class="row" style="justify-content:flex-start"><a class="btn primary" href="#talk">Tell Pip about it</a>${t.link?`<a class="btn" href="${t.link[0]}">${t.link[1]}</a>`:''}</div></section>
-      ${INFO.some(x=>x.topic===t.id)?`<section class="panel"><div class="row"><h2>Trusted reading</h2><span class="chip quiet">Opens another site</span></div><div class="reading">${INFO.filter(x=>x.topic===t.id).map(infoCard).join('')}</div><p class="foot">General information from Australian public health sources, checked ${INFO_CHECKED}. Not advice about your child.</p></section>`:''}
+      ${INFO.some(x=>x.topic===t.id)?`<section class="panel"><div class="row"><h2>Trusted reading</h2><span class="chip quiet">Opens another site</span></div><div class="reading">${INFO.filter(x=>x.topic===t.id).map(infoCard).join('')}</div><p class="foot">From Australian public health services.</p></section>`:''}
       <form class="panel" id="ask-form"><div class="field"><label for="ask-input">A question for the next Q&amp;A</label><input type="text" id="ask-input" maxlength="140" placeholder="General questions only"></div><div><button class="primary" type="submit">Send</button></div>${state.asked.length?`<p class="sub">${plural(state.asked.length,'question')} sent.</p>`:''}</form>
-      <p class="foot">Short videos and photo guides from the PaedsMe team. General information, not advice about your child. Each one is a draft until a paediatrician signs it off, and the media here are samples.</p>`;
-  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Learn</span><h1>Short videos and photo guides</h1><p class="lead">Five topics to start. General information from the PaedsMe team, never advice about one child.</p><div class="cta-row"><button type="button" class="cta" data-act="play" data-ep="intro" aria-pressed="${state.playing==='intro'}">${I.play} Hear Pip explain this page</button></div></div></div></div>${sparks}</section>
+      <p class="foot">Sample guides. Each one waits for a paediatrician’s approval.</p>`;
+  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Learn</span><h1>Short videos and photo guides</h1><p class="lead">General information, not advice about your child.</p><div class="cta-row"><button type="button" class="cta" data-act="play" data-ep="intro" aria-pressed="${state.playing==='intro'}">${I.play} Hear Pip explain this page</button></div></div></div></div>${sparks}</section>
   <section class="dash fam learn"><div class="wrap"><div class="app fam-web">${body}</div></div></section>`;
 }
 
@@ -509,37 +511,30 @@ function home(){
   return `<section class="band"><div class="wrap band-2"><div class="band-text">
      <span class="eyebrow">For families in Australia</span>
      <h1>Worried about your child? <em>Talk it through</em></h1>
-     <p class="lead">Tell Pip what you have noticed, the way you would say it to a friend. Pip helps you get it down clearly and points you to the right person. Pip is an AI companion, not a doctor, and never says what something is.</p>
-     <div class="cta-row"><a class="btn primary cta" href="#talk">Talk it through ${ARROW}</a><a class="btn cta" href="#find-care">Find care</a></div>
-     <ul class="trust left"><li>${TICK} Your words, kept as you said them</li><li>${TICK} Never a diagnosis</li></ul></div>
+     <p class="lead">Tell Pip what you’ve noticed, the way you’d tell a friend. Pip writes it down clearly and helps you find the right person. Pip is an AI helper, not a doctor.</p>
+     <div class="cta-row"><a class="btn primary cta" href="#talk">Talk it through ${ARROW}</a><a class="btn cta" href="#find-care">Find care</a></div></div>
     <div class="band-side"><div class="preview chatpv"><div class="pv-head">${PIP_SVG}<div><b>Pip</b><span class="sub">A sample conversation</span></div></div>
       <div class="tmsg me">She keeps waking at night and I do not know why.</div>
       <div class="tmsg bot">Thank you for telling me. When did you first notice it?</div>
       <div class="tmsg me">About three weeks ago.</div>
       <div class="tmsg bot">How often does it happen?</div>
       <a class="more" href="#talk">Start your own ${ARROW}</a></div></div></div>${sparks}</section>
-  <section class="strip"><div class="wrap"><a class="linkcard urgentlink" href="#urgent"><span><b>Need a paediatrician soon?</b><span class="sub">Ask for a video call with ${TELE.doctor}, for a fee. In danger, call 000.</span></span>${ARROW}</a></div></section>
-  <section class="sec"><div class="wrap">${secHead('What you can do here','One place, from the first worry to the plan','Start anywhere. Each part works without the others.')}
+  <section class="strip"><div class="wrap"><a class="linkcard urgentlink" href="#urgent"><span><b>Need a paediatrician soon?</b><span class="sub">Video call with ${TELE.doctor}. A fee applies. In danger, call 000.</span></span>${ARROW}</a></div></section>
+  <section class="sec"><div class="wrap">${secHead('Start here','What do you need today?')}
    <div class="grid4">
-    <a class="feat" href="#talk" style="--s:var(--lime-soft)"><span class="dot">${I.ask}</span><h3>Talk it through</h3><p>Tell Pip what is worrying you. You leave with a clear note in your own words.</p><span class="more">Talk to Pip ${ARROW}</span></a>
-    <a class="feat" href="#find-care" style="--s:var(--accent-soft)"><span class="dot">${I.people}</span><h3>Find care</h3><p>Rapid Access is a proposed model: a paediatrician by video within 48 hours of the referral.</p><span class="more">Find care ${ARROW}</span></a>
-    <a class="feat" href="#adhd-care" style="--s:var(--violet-soft)"><span class="dot">${I.chart}</span><h3>ADHD care</h3><p>Three steps, shared between a paediatrician and your GP, with the likely costs set out.</p><span class="more">See the steps ${ARROW}</span></a>
-    <a class="feat" href="#learn" style="--s:var(--sun-soft)"><span class="dot">${I.play}</span><h3>Learn</h3><p>Short videos and photo guides on feeding, sleep, skin, development and being unwell.</p><span class="more">Browse the topics ${ARROW}</span></a>
+    <a class="feat" href="#talk" style="--s:var(--lime-soft)"><span class="dot">${I.ask}</span><h3>Talk it through</h3><p>Tell Pip what’s worrying you.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
+    <a class="feat" href="#find-care" style="--s:var(--accent-soft)"><span class="dot">${I.people}</span><h3>Find care</h3><p>A paediatrician by video, within 48 hours of your GP’s referral.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
+    <a class="feat" href="#adhd-care" style="--s:var(--violet-soft)"><span class="dot">${I.chart}</span><h3>ADHD care</h3><p>A clear plan, shared with your GP.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
+    <a class="feat" href="#learn" style="--s:var(--sun-soft)"><span class="dot">${I.play}</span><h3>Learn</h3><p>Short guides on feeding, sleep, skin and more.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
    </div></div></section>
-  <section class="sec alt"><div class="wrap">${secHead('What Pip is','A companion for the worry, not a replacement for the doctor','You notice more than a visit has time for. Pip makes sure none of it is lost.')}
-   <div class="grid2 eq">
-    <div class="wcard"><h3>Pip does</h3><ul class="ticks"><li>${TICK} Listens, for as long as you need</li><li>${TICK} Asks a few short questions so nothing is left out</li><li>${TICK} Writes a note in your own words</li><li>${TICK} Shares general information from trusted Australian sources</li><li>${TICK} Points you to a GP, a nurse line or a paediatrician</li></ul></div>
-    <div class="wcard"><h3>Pip never does</h3><ul class="ticks no"><li>Says what something is</li><li>Says whether it is normal</li><li>Advises on medicine or treatment</li><li>Decides how urgent it is. In an emergency, call 000.</li></ul></div>
-   </div>
-   <div class="cta-row center"><a class="btn primary cta" href="#talk">Talk it through ${ARROW}</a></div></div></section>
-  <section class="sec"><div class="wrap">${secHead('How it works','You talk. Pip writes it down. The right person reads it.')}
+  <section class="sec alt"><div class="wrap">${secHead('How it works','You talk. Pip writes it down.')}
    <div class="grid3">
-    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>Say it your way</h3><p>Type what you have noticed, at any hour, without finding the right words first.</p></div>
-    <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>Pip writes the note</h3><p>What you noticed, since when, how often, and what worries you most. Nothing is scored.</p></div>
-    <div class="feat" style="--s:var(--lime-soft)"><span class="num">3</span><h3>You take it with you</h3><p>Copy it for your GP, or use it to ask for a paediatrician. The clinician sets the plan.</p></div>
+    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>Say it your way</h3><p>Type what you’ve noticed, any time. No need for the right words.</p></div>
+    <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>Pip writes the note</h3><p>What you saw, since when, and what worries you most.</p></div>
+    <div class="feat" style="--s:var(--lime-soft)"><span class="num">3</span><h3>You take it with you</h3><p>Show it to your GP, or use it to find a paediatrician.</p></div>
    </div></div></section>
-  <section class="sec alt"><div class="wrap closer"><span class="kick">The app</span><h2>Want Pip on your phone?</h2><p>We are starting with this website. If enough families ask for it, the app is what we build next.</p>
-   <div class="cta-row center"><a class="btn primary cta" href="#get-app" data-cta="home">Get the app ${ARROW}</a><button type="button" class="cta" data-act="survey">Take the parent survey</button></div></div></section>`;
+  <section class="sec"><div class="wrap closer"><span class="kick">The app</span><h2>Want Pip on your phone?</h2><p>The app isn’t built yet. Tell us you want it.</p>
+   <div class="cta-row center"><a class="btn primary cta" href="#get-app" data-cta="home">Get the app ${ARROW}</a></div></div></section>`;
 }
 /* Talk it through (19 Nov 2026). The Family app's job, done as a conversation: a parent says what worries them, Pip asks five
    short questions, and the answer is a note in the parent's own words. Pip records and relays. It never says what something is,
@@ -549,7 +544,7 @@ const TALK_LAB={what:'What I noticed',age:'Age',since:'First noticed',often:'How
 const TALK_START=['She keeps waking at night','A rash that keeps coming back','He is not talking much yet','Feeding is a battle'];
 const TALK_AGE={'Under 1':0,'1 to 2':1,'3 to 5':4,'6 to 11':8,'12 to 17':14};
 const ASKS=/\b(is (this|it|that|she|he) normal|should i (be )?worr|what is it\b|what could it be|what(?:'s| is) wrong|is (it|this|that) serious|do(es)? (she|he|they) have|could (it|this) be|what should i give|how much .*(medicine|give)|is it (adhd|autism|eczema))/i;
-const CANNOT='I cannot tell you that, and I would not want to guess about your child. A nurse can talk it through with you now on 1800 022 222, and your GP can see them. What I can do is make sure they hear everything you have noticed.';
+const CANNOT='I can’t tell you that, and I don’t want to guess about your child. A nurse can talk with you now on 1800 022 222, and your GP can see them. I can make sure they hear everything you’ve noticed.';
 const URGENT='If a child is in danger, call 000 now. For health advice from a nurse, call healthdirect on 1800 022 222, or in Queensland 13 HEALTH on 13 43 25 84. Pip cannot help with urgent medical problems.';
 const talkTopic=t=>{t=String(t).toLowerCase();return /sleep|wak|nap|bedtime|night/.test(t)?'sleep':/rash|skin|eczema|spots|itch/.test(t)?'skin':/feed|eat|bottle|breast|solids|food|milk/.test(t)?'feeding':/fever|temperature|sick|vomit|unwell|cough/.test(t)?'unwell':'nd';};
 const noteText=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>TALK_LAB[k]+': '+d[k]).join('\n');
@@ -574,7 +569,7 @@ const INFO_CHECKED='15 Nov 2026';
 const isQ=t=>/\?\s*$/.test(t)||/^\s*(how|what|why|when|should|is|are|can|could|does|do|will|who)\b/i.test(t)||ASKS.test(t);
 const infoFor=t=>{t=String(t).toLowerCase();return INFO.filter(x=>x.rx.test(t)).slice(0,2);};
 const infoCard=x=>`<a class="tinfo" href="${x.url}" target="_blank" rel="noopener"><span class="lab">${esc(x.by)}</span><b>${esc(x.title)}</b><span class="sub">${esc(x.covers)}</span><span class="more">Read it on ${x.url.split('/')[2].replace(/^www\./,'')} ${ARROW}</span></a>`;
-const infoCards=ids=>`<div class="tinfos">${ids.map(id=>INFO.find(x=>x.id===id)).filter(Boolean).map(infoCard).join('')}<p class="foot">General information, not advice about your child. Pages checked ${INFO_CHECKED}. Not yet reviewed by a PaedsMe paediatrician.</p></div>`;
+const infoCards=ids=>`<div class="tinfos">${ids.map(id=>INFO.find(x=>x.id===id)).filter(Boolean).map(infoCard).join('')}<p class="foot">General information, not advice about your child. Not yet checked by our doctors.</p></div>`;
 function talkSay(text,extra){state.talk.log.push(Object.assign({t:'pip',text},extra||{}));}
 function talkAsk(){const T=state.talk,q=TALK_Q[T.step-1];if(q)talkSay(q[1],{chips:q[2],n:T.step});}
 function talkSend(text){
@@ -583,54 +578,52 @@ function talkSend(text){
   if(EMERG.test(text)){T.log.push({t:'alert',text:URGENT});return;}
   const mid=T.step>0&&T.step<=TALK_Q.length;
   if(isQ(text)&&(mid||text.length<120)){let hits=infoFor(text);if(!hits.length&&mid)hits=infoFor(T.draft.what||'');const tp=hits.length?hits[0].topic:'none';T.asked[tp]=(T.asked[tp]||0)+1;
-    if(hits.length)talkSay('I cannot tell you about your own child, and I am not a doctor. Here is general information from a trusted Australian source. A nurse can also talk it through with you now on 1800 022 222.',{info:hits.map(x=>x.id)});
-    else talkSay(CANNOT+(mid?'':' Tell me what you have noticed, in your own words.'));
-    if(mid)talkAsk();else if(hits.length)talkSay('If you would like, tell me what you have noticed and I will write it down in your words for your GP.');
+    if(hits.length)talkSay('I can’t tell you about your own child. Here’s some general information from a trusted Australian source. A nurse can also talk with you now on 1800 022 222.',{info:hits.map(x=>x.id)});
+    else talkSay(CANNOT+(mid?'':' Tell me what you’ve noticed.'));
+    if(mid)talkAsk();else if(hits.length)talkSay('If you like, tell me what you’ve noticed and I’ll write it down for your GP.');
     return;}
-  if(!mid){T.draft={what:text};T.step=1;talkSay('Thank you for telling me. I will ask five short questions so nothing gets lost, then write it down in your words.');talkAsk();return;}
+  if(!mid){T.draft={what:text};T.step=1;talkSay('Thank you for telling me. Five quick questions, then I’ll write it down in your words.');talkAsk();return;}
   T.draft[TALK_Q[T.step-1][0]]=text;T.step++;
   if(T.step<=TALK_Q.length){talkAsk();return;}
-  talkSay('Here is what you have told me. Change anything that is not right by starting again.');T.log.push({t:'note',d:Object.assign({},T.draft),status:'pending'});
+  talkSay('Here’s what you told me.');T.log.push({t:'note',d:Object.assign({},T.draft),status:'pending'});
 }
 function talkSave(i){const T=state.talk,m=T.log[i];if(!m||m.t!=='note'||m.status!=='pending')return;
   m.status='done';const id='n'+(++T.seq);T.saved.unshift({id,date:TODAY,d:m.d});bump(talkTopic(m.d.what),'l');
   talkSay('Saved. Who would you like to take it to?',{next:id});}
 function talkView(){
   const T=state.talk;
-  if(!T.log.length)talkSay('Hi, I am Pip. Tell me what is worrying you about your child, in your own words. I am not a doctor and I will not tell you what it is. I will help you get it down clearly, so the right person hears all of it.',{chips:TALK_START});
+  if(!T.log.length)talkSay('Hi, I’m Pip. What’s worrying you about your child? Tell me in your own words. I’m not a doctor, so I can’t tell you what it is. I can help you get it down clearly for someone who can.',{chips:TALK_START});
   const lines=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>`<div><dt>${TALK_LAB[k]}</dt><dd>${esc(d[k])}</dd></div>`).join('');
   const log=T.log.map((m,i)=>m.t==='note'
     ?`<div class="tnote"><span class="lab">Your note</span><dl>${lines(m.d)}</dl>${m.status==='pending'?`<div class="acts"><button type="button" class="primary" data-act="talk-save" data-i="${i}">Save this note</button><button type="button" data-act="talk-new">Start again</button></div>`:'<span class="chip good">Saved</span>'}</div>`
     :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-urgent" data-id="${m.next}">An urgent video call</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
   const saved=T.saved.length?`<ul class="tsaved">${T.saved.map(n=>`<li><details><summary><b>${esc(n.d.what.length>70?n.d.what.slice(0,67)+'...':n.d.what)}</b><span class="sub">${fmt(n.date)}${n.d.age?' · '+esc(n.d.age):''}</span></summary><dl>${lines(n.d)}</dl></details><div class="acts"><button type="button" data-act="talk-gp" data-id="${n.id}">Copy for my GP</button><button type="button" data-act="talk-find" data-id="${n.id}">Find care with this</button></div></li>`).join('')}</ul>`
-    :'<p class="sub">Nothing saved yet. A note you save with Pip appears here, ready to copy for your GP.</p>';
-  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Pip · AI companion · scripted demo</span><h1>Tell Pip what is worrying you</h1><p class="lead">Pip listens, helps you get it down clearly, and points you to the right person. Pip is not a doctor and never says what something is.</p></div></div></div>${sparks}</section>
+    :'<p class="sub">Your saved notes will show here.</p>';
+  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Pip · AI helper</span><h1>Tell Pip what is worrying you</h1><p class="lead">Pip listens and writes it down for you. Pip isn’t a doctor.</p></div></div></div>${sparks}</section>
   <section class="dash fam"><div class="wrap"><div class="talk">
-    <section class="panel chat" aria-label="Conversation with Pip"><div class="chat-head">${PIP_SVG}<div><b>Pip</b><span class="sub">Here at any hour. Not a doctor.</span></div><button type="button" data-act="talk-new">New conversation</button></div>
+    <section class="panel chat" aria-label="Conversation with Pip"><div class="chat-head">${PIP_SVG}<div><b>Pip</b><span class="sub">Here any time</span></div><button type="button" data-act="talk-new">New conversation</button></div>
      <div class="tlog" id="talk-log" role="log" aria-live="polite">${log}</div>
      <form class="tform" id="talk-form"><label class="sr" for="talk-input">Your message to Pip</label><input type="text" id="talk-input" maxlength="400" autocomplete="off" placeholder="Type it the way you would say it"><button class="primary" type="submit">Send</button></form></section>
     <div class="fcol">
-     <section class="panel"><div class="row"><h2>Your notes</h2><span class="chip quiet">${T.saved.length} saved</span></div>${saved}<p class="foot">Kept in this browser only. Nothing is uploaded, and nothing is scored.</p></section>
-     <section class="panel urgent"><h2>If it is urgent</h2><ul class="plain"><li><b>000</b> if your child is in danger</li><li><b>1800 022 222</b> healthdirect, a nurse at any hour</li><li><b>13 43 25 84</b> 13 HEALTH, in Queensland</li></ul><a class="btn primary" href="#urgent">Speak to a paediatrician by video</a><p class="foot">A fee applies for the video call. Pip does not decide how urgent something is. Draft wording, for a paediatrician to sign off.</p></section>
-     <section class="panel nudge"><div class="txt"><h2>Want Pip on your phone?</h2><p class="sub">The app is not built yet. Tell us you want it and we will build it sooner.</p></div><a class="btn primary cta" href="#get-app" data-cta="talk">Get the app ${ARROW}</a></section>
+     <section class="panel"><div class="row"><h2>Your notes</h2><span class="chip quiet">${T.saved.length} saved</span></div>${saved}<p class="foot">Stays on this device.</p></section>
+     <section class="panel urgent"><h2>If it is urgent</h2><ul class="plain"><li><b>000</b> if your child is in danger</li><li><b>1800 022 222</b> healthdirect, a nurse at any hour</li><li><b>13 43 25 84</b> 13 HEALTH, in Queensland</li></ul><a class="btn primary" href="#urgent">Speak to a paediatrician by video</a><p class="foot">A fee applies for the video call.</p></section>
     </div></div></div></section>`;
 }
 function getApp(){
   const w=state.wait;
-  const form=w.joined?`<div class="panel"><h2>You are on the list</h2><p>Thanks. We will tell you when the app is ready${w.platform?' for '+esc(w.platform):''}.</p><p class="foot">This is a prototype. Your email was not saved or sent anywhere.</p><div><button type="button" data-act="wait-reset">Add another person</button></div></div>`
+  const form=w.joined?`<div class="panel"><h2>You are on the list</h2><p>Thanks. We will tell you when the app is ready${w.platform?' for '+esc(w.platform):''}.</p><p class="foot">Demo only. Your email wasn’t saved.</p><div><button type="button" data-act="wait-reset">Add another person</button></div></div>`
    :`<form class="panel" id="wait-form" novalidate><h2>Tell me when it is ready</h2>
      <div class="field"><label for="wait-email">Email</label><input type="email" id="wait-email" autocomplete="email" maxlength="120" placeholder="you@example.com"></div>
      <div class="field"><span class="lab" id="wp-lab">Your phone</span><div class="cpills" role="group" aria-labelledby="wp-lab">${['iPhone','Android'].map((p,i)=>`<label class="cpill"><input type="radio" name="wplat" id="wp-${i}" value="${p}">${p}</label>`).join('')}</div></div>
      <div class="field"><span class="lab" id="wu-lab">What would you use it for most?</span><div class="cpills" role="group" aria-labelledby="wu-lab">${Object.keys(w.uses).map((u,i)=>`<label class="cpill"><input type="checkbox" name="wuse" id="wu-${i}" value="${u}">${u}</label>`).join('')}</div></div>
      <div><button class="primary cta" type="submit">Put me on the list</button></div>
-     <p class="foot">Prototype: nothing you type here is saved or sent.</p></form>`;
+     <p class="foot">Demo only. Nothing you type is saved or sent.</p></form>`;
   return `<section class="band"><div class="wrap band-2"><div class="band-text">
-     <span class="eyebrow">The app · not built yet</span>
+     <span class="eyebrow">The app</span>
      <h1>PaedsMe <em>on your phone</em></h1>
-     <p class="lead">We are starting with this website, and Pip works here today. If enough families ask for it, the app is what we build next.</p>
-     <ul class="trust left"><li>${TICK} Free to join the list</li><li>${TICK} One email, when it is ready</li></ul></div>
+     <p class="lead">The app isn’t built yet. Join the list and we’ll tell you when it’s ready.</p></div>
     <div class="band-side">${form}</div></div>${sparks}</section>
-  <section class="sec"><div class="wrap">${secHead('What the app would add','The same record, closer to hand','These are proposals. What families pick on the list decides which comes first.')}
+  <section class="sec"><div class="wrap">${secHead('On your phone','What the app could do')}
    <div class="grid3">
     <div class="feat" style="--s:var(--accent-soft)"><span class="dot">${I.bottle}</span><h3>Log with one hand</h3><p>A feed or a nap in two taps, without opening a browser.</p></div>
     <div class="feat" style="--s:var(--orange-soft)"><span class="dot">${I.cam}</span><h3>Straight from your camera</h3><p>Add a photo or a video to a note the moment you take it.</p></div>
@@ -649,40 +642,40 @@ function urgentView(){
   const card=U.sent?`<div class="panel"><span class="chip good">Request sent</span><h2>${TELE.short}'s team will send your video link</h2>
      <p>Keep your phone nearby, and have your notes, photos and videos open.</p>
      <p class="note"><b>If your child is in danger at any time, call 000.</b></p>
-     <p class="foot">This is a prototype. Nothing was sent to anyone, and nothing was charged.</p><div><button type="button" data-act="urg-reset">Start again</button></div></div>`
+     <p class="foot">Demo only. Nothing was sent and nothing was charged.</p><div><button type="button" data-act="urg-reset">Start again</button></div></div>`
    :`<form class="panel" id="urgent-form" novalidate><h2>Ask for a video call</h2>
-     <label class="check"><input type="checkbox" id="urg-ok"${U.ok?' checked':''}><span>This is not an emergency. If my child were in danger, I would call 000.</span></label>
+     <label class="check"><input type="checkbox" id="urg-ok"${U.ok?' checked':''}><span>This isn’t an emergency. If my child were in danger, I’d call 000.</span></label>
      <div class="field"><label for="urg-age">Your child's age</label><select id="urg-age">${opts([['','Choose'],...TELE_AGES],U.age)}</select></div>
      <div class="field"><label for="urg-what">What is happening, in your own words</label><textarea id="urg-what" maxlength="400" placeholder="Type it the way you would say it">${esc(U.what)}</textarea></div>
      ${has?`<label class="check"><input type="checkbox" id="urg-note"${U.note?' checked':''}><span>Send my latest note from Pip as well</span></label>`:''}
-     <div class="feebox"><span class="lab">Fee</span><b>${fee}</b><span class="sub">You see the fee before you pay. Without a GP referral, Medicare may not pay any of it back.</span></div>
+     <div class="feebox"><span class="lab">Fee</span><b>${fee}</b><span class="sub">You’ll see the fee before you pay. Medicare may not cover it without a GP referral.</span></div>
      <div><button class="primary cta" type="submit">Request a video call ${ARROW}</button></div>
-     <p class="foot">Prototype: nothing is sent, and no payment is taken.</p></form>`;
+     <p class="foot">Demo only. Nothing is sent and no payment is taken.</p></form>`;
   return `<section class="band"><div class="wrap band-2"><div class="band-text">
-     <span class="eyebrow">Urgent video call · proposed, draft</span>
+     <span class="eyebrow">Urgent video call</span>
      <h1>Need a paediatrician soon? <em>Talk by video</em></h1>
-     <p class="lead">A video call with ${TELE.doctor}, paediatrician, for a fee. For when it cannot wait for a referral, and it is not an emergency.</p>
+     <p class="lead">A video call with ${TELE.doctor}, paediatrician. For when it can’t wait, and it isn’t an emergency.</p>
      <p class="alarm"><b>In danger? Call 000 now.</b> A video call is not for emergencies.</p>
      <div class="docline"><span class="ava2" aria-hidden="true">HS</span><div><b>${TELE.doctor}</b><span class="sub">${TELE.role} · video call · a fee applies</span></div></div></div>
     <div class="band-side">${card}</div></div>${sparks}</section>
-  <section class="sec"><div class="wrap">${secHead('How it works','Three steps to a video call','A proposed model. The hours, the wait and the fee are not set yet.')}
+  <section class="sec"><div class="wrap">${secHead('How it works','Three steps to a video call')}
    <div class="grid3">
-    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>You ask</h3><p>Say what is happening in your own words. You see the fee before you pay.</p></div>
+    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>You ask</h3><p>Tell us what’s happening.</p></div>
     <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>You get a link</h3><p>${TELE.short}'s team sends a video link to your phone.</p></div>
-    <div class="feat" style="--s:var(--lime-soft)"><span class="num">3</span><h3>You talk it through</h3><p>${TELE.short} talks with you and your child, and sets the plan. With your permission, a summary goes to your GP.</p></div>
+    <div class="feat" style="--s:var(--lime-soft)"><span class="num">3</span><h3>You talk it through</h3><p>${TELE.short} talks with you and your child and makes a plan.</p></div>
    </div></div></section>
-  <section class="sec alt"><div class="wrap">${secHead('Other doors','Not sure this is the right one?')}
+  <section class="sec alt"><div class="wrap">${secHead('Other help','Not sure this is right for you?')}
    <div class="grid3">
-    <div class="wcard"><h3>000</h3><p class="sub">If your child is in danger. Always the first call.</p></div>
+    <div class="wcard"><h3>000</h3><p class="sub">If your child is in danger.</p></div>
     <div class="wcard"><h3>1800 022 222</h3><p class="sub">healthdirect. A nurse answers at any hour. In Queensland, 13 HEALTH is 13 43 25 84.</p></div>
-    <a class="wcard linkish" href="#talk"><h3>Talk it through</h3><p class="sub">Tell Pip what is worrying you and leave with a clear note for your GP.</p><span class="more">Talk to Pip ${ARROW}</span></a>
+    <a class="wcard linkish" href="#talk"><h3>Talk it through</h3><p class="sub">Tell Pip what’s worrying you.</p><span class="more">Talk to Pip ${ARROW}</span></a>
    </div>
-   <p class="foot disc">${TELE.doctor} is a real paediatrician. Every other clinician on this site is made up. This page is a draft: he has not approved it, and a lawyer has not reviewed it.</p></div></section>`;
+   <p class="foot disc">${TELE.doctor} is a real paediatrician. This page is a draft he has not yet approved. Other doctors on this site are made up.</p></div></section>`;
 }
 function findCare(){
   const q=state.q, m=match(q), id=reqKey(), k=state.kids[id]||{name:'another child'}, rq=state.req[id];
   const hints=[];
-  if(!q.ref)hints.push('No referral yet. Choose a specialist and we write the request for your GP.');
+  if(!q.ref)hints.push('No referral yet? Pick a doctor and we’ll write the request for your GP.');
   if(q.concern==='behaviour')hints.push(q.age<17?'For ADHD, a paediatrician does the assessment and your GP does the regular visits after that.':'PaedsMe ADHD care is for children under 17.');
   else if(q.age>18)hints.push('For this concern, PaedsMe sees children and young people up to 18.');
   if(q.concern==='development'&&q.age<=8)hints.push('Thriving Kids supports children 8 and under with developmental needs, with no diagnosis required. A navigator can help you apply.');
@@ -695,28 +688,30 @@ function findCare(){
   if(miss.length)hints.push('None of these matches '+miss.join(' or ')+'. A navigator can search outside the network.');
   const sum=['Age '+q.age,label(q.concern),q.region];if(q.lang!=='Any')sum.push(q.lang);if(q.culture!=='Any')sum.push(q.culture);if(q.lived)sum.push('Lived experience');if(q.approach!=='Any')sum.push(q.approach==='Holistic'?'Holistic approach':'Mainstream medicine');
   return `<section class="band band-c"><div class="wrap"><div class="band-text">
-    <span class="eyebrow">Rapid Access · proposed model</span>
+    <span class="eyebrow">Find care</span>
     <h1>A paediatrician by video, <em>within 48 hours</em></h1>
-    <p class="lead">Tell us what is going on, in your own words. We match you to a specialist and write the request for your GP. The video visit follows within 48 hours of the referral.</p>
+    <p class="lead">Tell us what’s going on. We’ll match you with a paediatrician and write the request for your GP.</p>
     <div class="ask"><label class="sr" for="q-said">Tell us about your child</label>
      <textarea id="q-said" rows="3" maxlength="400" placeholder="${SAY[0][1]}">${esc(q.said)}</textarea>
      <div class="ask-bar"><button type="button" class="mic" data-act="listen" aria-pressed="${!!q.listening}">${I.mic}<span>${q.listening?'Listening. Tap to stop':'Speak'}</span></button><button type="button" class="primary cta" data-act="hear">Find matches ${ARROW}</button></div></div>
     ${q.heard.length?`<div class="heard"><span>We picked up</span>${q.heard.map(x=>`<span class="chip good">${esc(x)}</span>`).join('')}</div>`
      :`<div class="examples"><span>Try</span>${SAY.map((s,i)=>`<button type="button" class="ex" data-act="say" data-i="${i}">${s[0]}</button>`).join('')}</div>`}
-    <ul class="trust"><li>${TICK}A clinic triages every referral by hand</li><li>${TICK}Clinicians cannot pay to rank higher</li><li>${TICK}Video, or in person if you are local</li></ul>
    </div></div>${sparks}</section>
   <section class="sec" id="results"><div class="wrap duo">
-   <form class="filter" id="find-form" aria-label="Refine the search"><h2>Refine</h2>
+   <form class="filter" id="find-form" aria-label="About your child"><details class="f-all" data-fold="find"${(typeof innerWidth==='number'&&innerWidth<=940)&&!state.fold.find?'':' open'}><summary><h2>About your child</h2><span class="sub">Age ${q.age} · ${esc(q.region)}</span></summary>
     <div class="field"><label for="q-who">Who is it for?</label><select id="q-who">${opts([...Object.entries(state.kids).map(([i,c])=>[i,c.name+', '+c.age]),['other','Another child']],id)}</select></div>
     <div class="two"><div class="field"><label for="q-age">Age</label><input type="number" id="q-age" min="0" max="18" value="${q.age}"></div>
     <div class="field"><label for="q-region">Where you live</label><select id="q-region">${opts(REGIONS,q.region)}</select></div></div>
     <div class="field"><label for="q-concern">Main concern</label><select id="q-concern">${opts(CONCERNS,q.concern)}</select></div>
-    <div class="field"><label for="q-approach">Approach</label><select id="q-approach">${opts([['Any','Any approach'],['Mainstream','Mainstream medicine'],['Holistic','Holistic approach']],q.approach)}</select></div>
+    <details class="more-f" id="f-more"${q.more||q.approach!=='Any'||q.lang!=='Any'||q.culture!=='Any'||q.lived?' open':''}><summary>More choices</summary>
+     <div class="field"><label for="q-approach">Approach</label><select id="q-approach">${opts([['Any','Any approach'],['Mainstream','Mainstream medicine'],['Holistic','Holistic approach']],q.approach)}</select></div>
     <div class="field"><label for="q-lang">Language</label><select id="q-lang">${opts([['Any','Any language'],...LANGS],q.lang)}</select></div>
     <div class="field"><label for="q-culture">Cultural fit</label><select id="q-culture">${opts([['Any','No preference'],...CULT],q.culture)}</select></div>
     <label class="check"><input type="checkbox" id="q-lived"${q.lived?' checked':''}><span>A clinician with lived experience</span></label>
     <label class="check"><input type="checkbox" id="q-tele"${q.tele?' checked':''}><span>Video consults are fine</span></label>
-    <label class="check"><input type="checkbox" id="q-ref"${q.ref?' checked':''}><span>We already have a GP referral</span></label>
+    </details>
+     <label class="check"><input type="checkbox" id="q-ref"${q.ref?' checked':''}><span>We already have a GP referral</span></label>
+     </details>
    </form>
    <div class="res">
     ${reqCard(id)}
@@ -726,20 +721,19 @@ function findCare(){
       <span class="ava2" aria-hidden="true">${ini(c.name)}</span>
       <div class="doc-main">${c.rapid?'<span class="tag">Rapid Access</span>':i===0?'<span class="tag alt">Top match</span>':''}<h3>${esc(c.name)}</h3><p class="sub">${esc(c.role)} · ${esc(c.region)} · ${c.holistic?'Holistic approach':'Mainstream medicine'}</p>
        <ul class="why">${why.filter(w=>!/^(About \d+ days|Rapid Access)/.test(w)).map(w=>`<li>${TICK}${esc(w)}</li>`).join('')}</ul></div>
-      <div class="doc-side"><div class="wait">${c.rapid?'<b>48</b><span>hours to a video visit,<br>once the referral arrives</span>':`<b>${c.wait}</b><span>days to a first visit</span>`}</div>
-       <p class="price">${p.adhd?'ADHD assessment visit, about $'+p.fee:'First visit $'+p.fee}<span>about $${p.gap} out of pocket after the rebate</span></p>
+      <div class="doc-side"><div class="wait">${c.rapid?'<b>48</b><span>hours to a video visit<br>after your referral</span>':`<b>${c.wait}</b><span>days to a first visit</span>`}</div>
+       <p class="price">${p.adhd?'ADHD assessment visit, about $'+p.fee:'First visit $'+p.fee}<span>about $${p.gap} after Medicare</span></p>
        <button class="primary" data-act="book" data-name="${esc(c.name)}"${mine?' disabled':''}>${mine?'Requested':q.ref?'Send my referral':'Ask for a referral'}</button></div></li>`;}).join('')}</ol>`
      :`<div class="empty"><h3>No clinician in the network fits yet</h3><p>Allow video consults or any approach, or a navigator can search outside the network.</p></div>`}
     ${q.concern==='behaviour'?`<a class="linkcard" href="#adhd-care"><span><b>How ADHD care works, and what it costs</b><span class="sub">Three steps, shared between a paediatrician and your GP</span></span>${ARROW}</a>`:''}
-    <p class="foot">Ranked on clinical fit, location, wait and what matters to your family. Clinicians cannot pay to rank higher. The request is for ${esc(k.name)}.</p>
-    <p class="foot disc">PaedsMe checks each clinician's registration and training. It does not provide medical care and does not vouch for clinical outcomes. Draft wording, not yet reviewed by a lawyer.</p>
+    <p class="foot">Doctors can’t pay to appear higher. This request is for ${esc(k.name)}.</p>
    </div></div></section>
-  <section class="sec alt"><div class="wrap">${secHead('How Rapid Access works','From a question to a plan, in four steps','You cannot book a specialist directly. A referral comes first, and the clinic triages it by hand.')}
+  <section class="sec alt"><div class="wrap">${secHead('How it works','Four steps to a plan','You need a GP referral first. We help you get it.')}
    <div class="grid4">
-    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>You are matched</h3><p>Type or say a sentence about your child. We match on clinical fit, location, wait and what matters to your family.</p></div>
-    <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>Your GP refers</h3><p>PaedsMe drafts the request. Your GP writes the referral, and it goes to the clinic in one standard format.</p></div>
-    <div class="feat" style="--s:var(--violet-soft)"><span class="num">3</span><h3>Video visit in 48 hours</h3><p>A paediatrician sees you by video within 48 hours of the referral, or in person if you are local.</p></div>
-    <div class="feat" style="--s:var(--lime-soft)"><span class="num">4</span><h3>A plan to follow</h3><p>The paediatrician sets the plan. Your GP does the ongoing care, close to home.</p></div>
+    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>We match you</h3><p>Tell us about your child and we suggest doctors who fit.</p></div>
+    <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>Your GP refers</h3><p>We write the request. Your GP writes the referral.</p></div>
+    <div class="feat" style="--s:var(--violet-soft)"><span class="num">3</span><h3>Video visit in 48 hours</h3><p>A paediatrician sees you by video within 48 hours of the referral.</p></div>
+    <div class="feat" style="--s:var(--lime-soft)"><span class="num">4</span><h3>A plan to follow</h3><p>The paediatrician makes the plan. Your GP looks after the rest, close to home.</p></div>
    </div>
    <div class="cta-row center"><a class="btn primary cta" href="#talk">Talk it through with Pip ${ARROW}</a></div></div></section>`;
 }
@@ -883,9 +877,9 @@ function careModel(){
   const total=f1+f2+n*fg,payLo=g1+g2+n*lo,payHi=g1+g2+n*hi,fd=m.forms,nf=(fd.parent?1:0)+(fd.teacher?1:0),pay=n?money(payLo)+' to '+money(payHi):money(payLo),an=/^a/.test(lead)?'an':'a';
   const step=(i,who,title,text,fee,chip)=>`<li style="--c:var(--${TINT[i]});--s:var(--${TINT[i]}-soft)"><span class="dot">${i+1}</span><span class="who">${who}</span><h3>${title}</h3><p>${text}</p>${chip?'<span class="chip">More specialist visits</span>':''}${fee&&paed?`<span class="fee">${fee}</span>`:''}</li>`;
   return `<section class="band"><div class="wrap band-2"><div class="band-text">
-    <span class="eyebrow">ADHD care · proposed model, draft</span>
+    <span class="eyebrow">ADHD care</span>
     <h1>ADHD care for children, shared with <em>your GP</em></h1>
-    <p class="lead">A paediatrician does the assessment and sets the plan. Your GP does the regular visits close to home. The paediatrician reviews twice a year, and sooner by video if something changes.</p>
+    <p class="lead">A paediatrician does the assessment and makes the plan. Your GP does the regular visits, close to home.</p>
     <div class="ctrl"><span class="chip">For children under 17</span>
      <label class="check"><input type="checkbox" id="cm-complex"${m.complex?' checked':''}><span>Autism, epilepsy or Tourette's as well</span></label></div>
     <div class="cta-row"><button type="button" class="primary cta" data-act="cm-find">Find a paediatrician ${ARROW}</button>${PARKED_ON?'<a class="btn cta" href="#gp-referral">I am a GP</a>':''}</div>
@@ -894,36 +888,36 @@ function careModel(){
     <span class="lab">${B[1]}</span><p class="leads">${an==='an'?'An':'A'} ${lead} leads the care.</p>
     <ol class="mini"><li>Assessment and diagnosis</li><li>Regular visits with your GP</li><li>${m.complex?'Closer review':'Review twice a year'}</li></ol>
     <div class="divide"></div>
-    ${paed?`<span class="lab">First year, out of pocket</span><div class="bignum">About ${pay}</div><p class="sub">With ${plural(n,'GP visit')}. ${money(total)} in fees before Medicare. Indicative, not a quote.</p>`
+    ${paed?`<span class="lab">First year, out of pocket</span><div class="bignum">About ${pay}</div><p class="sub">With ${plural(n,'GP visit')}. A guide, not a quote.</p>`
      :`<p class="sub">Fees for care led by ${an} ${lead} are not set yet.</p>`}
    </div></div></div>${sparks}</section>
-  <section class="sec"><div class="wrap">${secHead('How it works','Three steps, shared between a paediatrician and your GP','PaedsMe ADHD care is for children under 17.')}
+  <section class="sec"><div class="wrap">${secHead('How it works','Three steps')}
    <ol class="flow">
-    ${step(0,B[2],'Assessment and diagnosis',(paed?'Two visits, the first by video within 48 hours of the referral. You and the teacher fill in a questionnaire first, so it is ready. ':'')+`The ${lead} confirms the diagnosis, checks for anything else going on and writes the plan.`,'About '+money(f1)+', then about '+money(f2))}
+    ${step(0,B[2],'Assessment and diagnosis',(paed?'Two visits. You and the teacher fill in a short form first. ':'')+`The ${lead} does the assessment and writes the plan.`,'About '+money(f1)+', then about '+money(f2))}
     ${step(1,'Your GP','Regular visits','Your GP follows the plan: check-ins, repeat scripts and routine checks.','About '+money(fg)+' a visit')}
-    ${step(2,B[2],m.complex?'Closer review':'Review twice a year',m.complex?`With autism, epilepsy or Tourette's, the ${lead} is involved more often than twice a year. The steps stay the same.`:`Twice a year the ${lead} reviews the plan. In between, your GP manages the care. If something changes, your GP asks for a video visit.`,'',m.complex)}
+    ${step(2,B[2],m.complex?'Closer review':'Review twice a year',m.complex?`With autism, epilepsy or Tourette's, the ${lead} is involved more often than twice a year. The steps stay the same.`:`The ${lead} checks in twice a year, and sooner if something changes.`,'',m.complex)}
    </ol></div></section>
-  ${paed?`<section class="sec alt"><div class="wrap">${secHead('What it costs','What you pay, visit by visit','Figures proposed by the clinical lead. "You pay" is after the Medicare rebate and needs a current GP referral. Not a quote.')}
+  ${paed?`<section class="sec alt"><div class="wrap">${secHead('What it costs','A guide to what you pay','After Medicare, with a GP referral. A guide, not a quote.')}
    <div class="grid2 eq">
-    <div class="wcard"><div class="row"><h3>Each visit</h3><span class="chip quiet">Indicative</span></div>
+    <div class="wcard"><div class="row"><h3 id="cm-gp-lab">GP visits in the first year</h3><div class="stepper" role="group" aria-labelledby="cm-gp-lab"><button type="button" data-act="cm-gp" data-d="-1" aria-label="One fewer GP visit"${n<=0?' disabled':''}>−</button><output aria-live="polite">${n}</output><button type="button" data-act="cm-gp" data-d="1" aria-label="One more GP visit"${n>=12?' disabled':''}>+</button></div></div>
+     <div><span class="lab">First year, out of pocket</span><div class="bignum">About ${pay}</div><p class="sub">${money(total)} in fees before Medicare.</p></div>
+     ${m.complex?'<p class="note">More specialist visits add to the cost. The paediatrician tells you how many at the first visit.</p>':''}
+     <p class="foot">Two paediatrician visits, then ${plural(n,'GP visit')}. Review fees aren’t set yet.</p></div>
+    <details class="wcard fold" data-fold="visits"${state.fold.visits?' open':''}><summary><h3>See each visit</h3></summary>
      <table class="cost"><thead><tr><th>Visit</th><th>Fee, about</th><th>You pay, about</th></tr></thead><tbody>
       <tr><td>Paediatrician, first visit</td><td>${money(f1)}</td><td>${money(g1)}</td></tr>
       <tr><td>Paediatrician, second visit</td><td>${money(f2)}</td><td>${money(g2)}</td></tr>
       <tr><td>GP visit, each</td><td>${money(fg)}</td><td>${money(lo)} to ${money(hi)}</td></tr></tbody></table>
      <div class="cmp"><span class="lab">The assessment, compared</span>
       <div class="ln"><span>With a paediatrician, two visits</span><b>about ${money(f1+f2)}</b><div class="bar"><i style="width:${Math.round(100*(f1+f2)/CARE.gpOnly)}%"></i></div></div>
-      <div class="ln"><span>With a GP only, one long consult</span><b>about ${money(CARE.gpOnly)}</b><div class="bar"><i class="alt" style="width:100%"></i></div></div></div></div>
-    <div class="wcard"><div class="row"><h3 id="cm-gp-lab">GP visits in the first year</h3><div class="stepper" role="group" aria-labelledby="cm-gp-lab"><button type="button" data-act="cm-gp" data-d="-1" aria-label="One fewer GP visit"${n<=0?' disabled':''}>−</button><output aria-live="polite">${n}</output><button type="button" data-act="cm-gp" data-d="1" aria-label="One more GP visit"${n>=12?' disabled':''}>+</button></div></div>
-     <div><span class="lab">First year, out of pocket</span><div class="bignum">About ${pay}</div><p class="sub">${money(total)} in fees before Medicare.</p></div>
-     ${m.complex?'<p class="note">More specialist visits add to the cost. The paediatrician tells you how many at the first visit.</p>':''}
-     <p class="foot">Two paediatrician visits, then ${plural(n,'GP visit')}. After that, two specialist reviews a year. The review fee is not set yet.</p></div>
+      <div class="ln"><span>With a GP only, one long consult</span><b>about ${money(CARE.gpOnly)}</b><div class="bar"><i class="alt" style="width:100%"></i></div></div></div></details>
    </div></div></section>
-  <section class="sec"><div class="wrap grid2 mid"><div>${secHead('Before the first visit','The questionnaire is ready before you walk in','Filled in at home and at school. The paediatrician has the answers before the visit. The app passes them on and does not score them.')}</div>
+  <section class="sec"><div class="wrap grid2 mid"><div>${secHead('Before the first visit','Two short forms','One for you and one for the teacher. The paediatrician reads them before you meet.')}</div>
     <div class="wcard"><div class="row"><h3>Questionnaire</h3><span class="chip ${nf===2?'good':''}">${nf} of 2 in</span></div>
      <ul class="list"><li><div class="txt"><b>Parent form</b><div class="sub">At home, on your phone</div></div><button type="button" data-act="cm-form" data-f="parent"${fd.parent?' disabled':''}>${fd.parent?'Done':'Fill in'}</button></li>
       <li><div class="txt"><b>Teacher form</b><div class="sub">We email a link to the school</div></div><button type="button" data-act="cm-form" data-f="teacher"${fd.teacher?' disabled':''}>${fd.teacher?'Sent':'Send to teacher'}</button></li></ul></div>
    </div></section>`:''}
-  <section class="sec alt"><div class="wrap closer"><h2>Start with a GP referral</h2><p>A GP referral comes first, so Medicare can pay a rebate. Then we match you to ${an} ${lead}.</p>
+  <section class="sec alt"><div class="wrap closer"><h2>Start with a GP referral</h2><p>See your GP for a referral, then we’ll match you with ${an} ${lead}.</p>
    <div class="cta-row center"><button type="button" class="primary cta" data-act="cm-find">Find a paediatrician ${ARROW}</button>${PARKED_ON?'<a class="btn cta" href="#gp-referral">I am a GP</a>':''}</div></div></section>`;
 }
 /* Team view: which of the five topic categories parents use. Counts only; no child or parent is identified. */
@@ -956,6 +950,12 @@ function teamView(){
    </div>
   </div></section>`;
 }
+/* Hero photos (24 Nov 2026). A page's band takes a photo behind its words once a file is listed here, for example
+   {home:'img/hero-home.jpg'}. The list is empty until the photos exist, so nothing is requested and the aqua band shows. */
+const HERO={};
+const heroOk={};
+function paintHero(){const v=view(),b=document.querySelector('#view .band');if(b&&heroOk[v]){b.classList.add('photo');b.style.setProperty('--hero','url("'+HERO[v]+'")');}}
+function loadHeroes(){Object.keys(HERO).forEach(k=>{const im=new Image();im.onload=()=>{heroOk[k]=true;paintHero();};im.src=HERO[k];});}
 const VIEWS={home,talk:talkView,urgent:urgentView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
 function render(){
   const v=VIEWS[location.hash.slice(1)]?location.hash.slice(1):'home';
@@ -964,14 +964,15 @@ function render(){
   const root=document.getElementById('view');document.body.dataset.view=v;root.classList.toggle('enter',render.last!==v);render.last=v;
   root.innerHTML=VIEWS[v]();
   const fam=v==='family';
-  syncFab();
-  if(v==='talk'){const l=$('talk-log');if(l)l.scrollTop=l.scrollHeight;if(render.focusTalk){render.focusTalk=false;const ti=$('talk-input');if(ti)ti.focus();}}
+  syncFab();paintHero();
+  if(v==='talk'){const l=$('talk-log');if(l)l.scrollTop=l.scrollHeight;if(render.focusTalk){render.focusTalk=false;const ti=$('talk-input');if(ti){ti.focus({preventScroll:true});if(ti.scrollIntoView)ti.scrollIntoView({block:'nearest'});}}}
   if(fam&&state.quick){const q=$('quick-input');if(q)q.focus();}
 }
 function syncFab(){$('pip-open').hidden=!$('pip').hidden;}
 let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3200);}
 
 document.addEventListener('click',e=>{
+  if(e.target.closest('a.logo')&&view()==='home')window.scrollTo(0,0);
   const cta=e.target.closest('[data-cta]');if(cta&&state.wait.taps[cta.dataset.cta]!=null)state.wait.taps[cta.dataset.cta]++;
   const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='pip-chip'){send(b.textContent);return;}
@@ -1265,8 +1266,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)op
   renderPip();
 })();
 if(PARKED_ON){const n=document.querySelector('.tabs');if(n)n.insertAdjacentHTML('beforeend','<a href="#family">My family</a><a href="#gp-referral">GP referral</a><a href="#diagnostics">Diagnostics hub</a><a href="#clinic">Clinic tools</a>');}
-window.addEventListener('hashchange',()=>{presStop();state.pres.on=false;render();renderPip();window.scrollTo(0,0);});
+document.addEventListener('toggle',e=>{const t=e.target;if(t.id==='f-more')state.q.more=t.open;if(t.dataset&&t.dataset.fold)state.fold[t.dataset.fold]=t.open;},true);
+/* On a tablet or phone the header tucks away while scrolling down and returns on the way up. */
+let lastY=0;window.addEventListener('scroll',()=>{const y=window.scrollY,t=document.querySelector('.top');if(!t)return;if(window.innerWidth<=940&&y>lastY+6&&y>160)t.classList.add('tuck');else if(y<lastY-6||y<=160)t.classList.remove('tuck');lastY=y;},{passive:true});
+window.addEventListener('hashchange',()=>{const tp=document.querySelector('.top');if(tp)tp.classList.remove('tuck');presStop();state.pres.on=false;render();renderPip();window.scrollTo(0,0);});
 function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked&&saved.urgent)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;render();renderPip();}
 try{if('speechSynthesis' in window){speechSynthesis.getVoices();}}catch(e){}
+try{loadHeroes();}catch(e){}
 window.claude?.hot?.snapshot?.(()=>state);
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});

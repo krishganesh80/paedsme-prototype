@@ -730,3 +730,75 @@ a.wcard.linkish{text-decoration:none;color:var(--ink);transition:transform .15s}
 a.wcard.linkish:hover{transform:translateY(-3px)}
 .panel.urgent a.btn{align-self:flex-start}
 @media (prefers-reduced-motion:reduce){a.wcard.linkish:hover{transform:none}}
+
+/* The logo is the way home (23 Nov 2026); there is no Home tab. */
+a.logo{text-decoration:none;color:inherit;border-radius:10px}
+.site-foot a.logo{color:#fff}
+
+/* Less on the page (24 Nov 2026): fewer labels, fewer footnotes, and the less-used choices folded away. */
+.more-f{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:12px}
+.more-f summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.more-f[open] summary{margin-bottom:4px}
+.band-text{gap:20px}
+.sec-head{margin-bottom:clamp(20px,3vw,36px)}
+.foot{opacity:.85}
+a.logo{display:inline-flex;align-items:center;min-height:44px}
+
+/* Hero photos: the photo sits behind the words, under an aqua wash that keeps the text readable in both themes. */
+.band.photo{background-image:linear-gradient(90deg,color-mix(in srgb,var(--sky) 96%,transparent) 0%,color-mix(in srgb,var(--sky) 88%,transparent) 46%,color-mix(in srgb,var(--sky) 30%,transparent) 100%),var(--hero);background-size:cover;background-position:center right}
+.band.photo::before{display:none}
+.band.photo.band-c{background-image:linear-gradient(color-mix(in srgb,var(--sky) 86%,transparent),color-mix(in srgb,var(--sky) 86%,transparent)),var(--hero)}
+@media (max-width:900px){.band.photo{background-image:linear-gradient(color-mix(in srgb,var(--sky) 90%,transparent),color-mix(in srgb,var(--sky) 90%,transparent)),var(--hero)}}
+
+/* Room to breathe (25 Nov 2026): wider gaps, shorter lines, and layouts checked on a laptop, a tablet and a phone. */
+body{line-height:1.6}
+.band:not(.band-s){padding-block:clamp(56px,9vw,120px) clamp(88px,12vw,160px)}
+.band-text{gap:24px}
+.lead{max-width:44ch;line-height:1.6}
+.band-c .lead{max-width:48ch}
+.sec{padding-block:clamp(64px,9vw,128px)}
+.sec-head{gap:14px;margin-bottom:clamp(32px,4.5vw,60px)}
+.grid3,.grid4{gap:clamp(20px,2.6vw,32px)}
+.wcard,.feat{padding:clamp(24px,3vw,36px);gap:16px}
+.feat p,.wcard p{line-height:1.6}
+.feat .more{margin-top:8px}
+.dash{padding-bottom:clamp(64px,8vw,120px)}
+.dash .panel{padding:clamp(22px,2.8vw,32px);gap:16px}
+.fcol{gap:28px}
+.talk{gap:32px}
+.strip{padding-block:clamp(28px,4vw,48px) 0}
+.closer{gap:16px}
+.doc{margin-bottom:6px}
+/* Folds. */
+.f-all>summary{display:flex;flex-direction:column;gap:2px;list-style:none;cursor:pointer}
+.f-all>summary::-webkit-details-marker{display:none}
+.f-all[open]>summary{margin-bottom:14px}
+.f-all[open]>summary .sub{display:none}
+.f-all{display:flex;flex-direction:column;gap:12px}
+@media (min-width:941px){.f-all>summary{pointer-events:none;cursor:default}}
+@media (max-width:940px){.f-all>summary{flex-direction:row;align-items:center;justify-content:space-between;min-height:44px}.f-all>summary::after{content:"Change";font-weight:700;border:2px solid var(--line);border-radius:999px;padding:6px 14px;font-size:.88rem}.f-all[open]>summary::after{content:"Done"}.f-all[open]>summary .sub{display:none}}
+details.fold>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:44px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::after{content:"+";font-family:var(--display);font-size:1.6rem;line-height:1}
+details.fold[open]>summary::after{content:"−"}
+.grid2>details.fold{align-self:start}
+/* Tablet. */
+@media (max-width:1100px){.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:621px) and (max-width:940px){.band-2 .band-side{max-width:560px}.talk .fcol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
+/* Phone: a slimmer header, a quieter helper button, and the conversation scrolls with the page. */
+@media (max-width:620px){
+  .top .wrap{padding-block:6px}
+  .tabs a{min-height:40px;padding:6px 12px}
+  .pip-fab{padding:6px}.pip-fab span{display:none}
+  .tlog{max-height:none;min-height:240px}
+  .sec{padding-block:56px}
+  .band:not(.band-s){padding-block:40px 84px}
+  .wcard,.feat{padding:22px}
+  .cta-row>.btn,.cta-row>button{width:100%}
+}
+html{-webkit-text-size-adjust:100%}
+/* Header: one row from 900px up now the demo note is gone; below that it tucks away on the way down. */
+@media (min-width:900px){.tabs{order:0;flex-basis:auto;justify-content:center;margin-inline:0;padding-bottom:0}.getapp{margin-left:0}}
+.top{transition:transform .25s ease}
+.top.tuck{transform:translateY(-102%)}
+@media (prefers-reduced-motion:reduce){.top{transition:none}}
