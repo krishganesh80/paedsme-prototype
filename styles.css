@@ -15,24 +15,8 @@ body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!impor
   --r:18px;--star:#F4B740;
   --shadow:0 12px 32px rgba(62,74,92,.12);
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0F2730; --sky:#145866; --sky-pale:#1C6D7D; --surface:#163640; --ink:#EAF4F6; --muted:#9FB8BF; --line:#2A4F5A;
-  --accent:#5CD0EA; --accent-ink:#062422; --accent-soft:#15424D;
-  --sun:#F4B740; --sun-soft:#3A2F12;
-  --orange:#F58A62; --orange-soft:#3F2418; --violet:#B39DF0; --violet-soft:#2A2244;
-  --lime:#A9D95F; --lime-deep:#C6EA8A; --lime-soft:#24401A;
-  --good:#A9D95F; --good-soft:#24401A; --warn:#F0B354; --warn-soft:#3A2C10; --crit:#F0838A; --crit-soft:#40181C;
-  --shadow:0 12px 32px rgba(0,0,0,.35);
-  color-scheme:dark } }
-:root[data-theme="dark"]{
-  --bg:#0F2730; --sky:#145866; --sky-pale:#1C6D7D; --surface:#163640; --ink:#EAF4F6; --muted:#9FB8BF; --line:#2A4F5A;
-  --accent:#5CD0EA; --accent-ink:#062422; --accent-soft:#15424D;
-  --sun:#F4B740; --sun-soft:#3A2F12;
-  --orange:#F58A62; --orange-soft:#3F2418; --violet:#B39DF0; --violet-soft:#2A2244;
-  --lime:#A9D95F; --lime-deep:#C6EA8A; --lime-soft:#24401A;
-  --good:#A9D95F; --good-soft:#24401A; --warn:#F0B354; --warn-soft:#3A2C10; --crit:#F0838A; --crit-soft:#40181C;
-  --shadow:0 12px 32px rgba(0,0,0,.35);
-  color-scheme:dark }
+/* One look everywhere (27 Nov 2026): the light aqua theme is used on every device. The dark theme was removed at the founder's request. */
+:root{color-scheme:light}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;position:relative}
 /* The aqua ground: a band at the top with two pale sweeps, like the reference screens. */
@@ -248,8 +232,6 @@ table.cost th:nth-child(n+2),table.cost td:nth-child(n+2){text-align:right;white
    app keeps its phone column. Same tokens as above; nothing here introduces a new colour.
    ========================================================================================== */
 :root{--wrap:1180px;--r-lg:28px;--shadow-lg:0 24px 60px rgba(62,74,92,.16);--hair:rgba(62,74,92,.10);--mark:#C9EC92}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--shadow-lg:0 24px 60px rgba(0,0,0,.45);--hair:rgba(255,255,255,.10);--mark:rgba(169,217,95,.38)}}
-:root[data-theme="dark"]{--shadow-lg:0 24px 60px rgba(0,0,0,.45);--hair:rgba(255,255,255,.10);--mark:rgba(169,217,95,.38)}
 html{scroll-behavior:smooth;scroll-padding-top:110px}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 .wrap{max-width:var(--wrap);padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
