@@ -678,7 +678,6 @@ function findCare(){
   if(!q.ref)hints.push('No referral yet? Pick a doctor and we’ll write the request for your GP.');
   if(q.concern==='behaviour')hints.push(q.age<17?'For ADHD, a paediatrician does the assessment and your GP does the regular visits after that.':'PaedsMe ADHD care is for children under 17.');
   else if(q.age>18)hints.push('For this concern, PaedsMe sees children and young people up to 18.');
-  if(q.concern==='development'&&q.age<=8)hints.push('Thriving Kids supports children 8 and under with developmental needs, with no diagnosis required. A navigator can help you apply.');
   if(PARKED_ON&&q.concern==='seizures')hints.push('The paediatrician may order an EEG. It can be booked through PaedsMe Diagnostics at the same time.');
   if(PARKED_ON&&q.concern==='heart')hints.push('An ECG or Holter monitor can be booked through PaedsMe Diagnostics if the doctor orders one.');
   if(m.length&&!m.some(x=>x.c.rapid))hints.push('Rapid Access is not open for this yet. These clinicians have their usual wait.');
@@ -952,9 +951,10 @@ function teamView(){
 }
 /* Hero photos (24 Nov 2026). A page's band takes a photo behind its words once a file is listed here, for example
    {home:'img/hero-home.jpg'}. The list is empty until the photos exist, so nothing is requested and the aqua band shows. */
-const HERO={};
+const HERO={home:'img/hero-home.jpg',talk:'img/hero-talk.jpg','find-care':'img/hero-find-care.jpg'};
 const heroOk={};
-function paintHero(){const v=view(),b=document.querySelector('#view .band');if(b&&heroOk[v]){b.classList.add('photo');b.style.setProperty('--hero','url("'+HERO[v]+'")');}}
+function paintHero(){const v=view(),b=document.querySelector('#view .band');if(!b||!heroOk[v])return;b.classList.add('photo');b.style.setProperty('--hero','url("'+HERO[v]+'")');
+  const w=b.querySelector('.wrap');if(w&&!w.querySelector('.hero-pic')){const im=document.createElement('img');im.className='hero-pic';im.alt='';im.src=HERO[v];w.appendChild(im);}}
 function loadHeroes(){Object.keys(HERO).forEach(k=>{const im=new Image();im.onload=()=>{heroOk[k]=true;paintHero();};im.src=HERO[k];});}
 const VIEWS={home,talk:talkView,urgent:urgentView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
 function render(){
@@ -1155,7 +1155,7 @@ function context(){
   return `You are Pip, the support assistant inside PaedsMe, an Australian service that matches families to paediatric clinicians and books paediatric EEG and ECG tests. This is a prototype on synthetic data. Today is ${fmt(TODAY)}.
 You are talking to ${ROLE[r].about}.
 Rules:
-- Help with navigation and admin only: bookings, rescheduling, referrals, the preparation steps listed for a visit, fees shown, funding programs such as Medicare, Thriving Kids and the NDIS, and where things are in the app.
+- Help with navigation and admin only: bookings, rescheduling, referrals, the preparation steps listed for a visit, fees shown, funding programs such as Medicare and the NDIS, and where things are in the app.
 - Never diagnose, never interpret symptoms, results, milestones or growth, and never advise on medicines or treatment. Say the care team does that, then offer a booking or a navigator call.
 - If anything sounds urgent, tell them to call 000 first.
 - To change anything, call propose_action. It shows a confirm card and nothing happens until the user taps Confirm. Never say something is booked, sent or done. Say the card is ready to confirm.
@@ -1212,7 +1212,7 @@ function scripted(text){
   if(/next|upcoming|when|appointment/.test(q))return say(nx?`Next is ${nx.what} on ${fmt(nx.date)} at ${nx.time} with ${nx.who}. ${ap.length-1} more after that.`:'Nothing is booked yet.');
   if(/find|book|paediatric|pediatric|clinician|doctor|specialist/.test(q)){const m=match({age:AGE[state.child],concern:state.q.concern,region:state.q.region,tele:true});
     return m.length?tryP({kind:'book',name:m[0].c.name},`For ${label(state.q.concern).toLowerCase()} near ${state.q.region}, ${m[0].c.name} is the best fit${m[0].c.rapid?', through Rapid Access: a video visit within 48 hours of the referral':', about '+m[0].c.wait+' days away'}.${m[1]?' Next is '+m[1].c.name+'.':''} Confirm and I prepare the referral request for your GP. You cannot book a specialist directly.`):say('No one in the network fits yet. A navigator can search further.');}
-  if(/thriving|ndis|fund|cost|fee|medicare|rebate/.test(q))return tryP({kind:'navigator_callback',note:'Help with funding options'},'Medicare pays a rebate on specialist visits when you have a GP referral. Thriving Kids supports children 8 and under with developmental needs, and the NDIS covers permanent and significant disability. A navigator can go through which fits.');
+  if(/thriving|ndis|fund|cost|fee|medicare|rebate/.test(q))return tryP({kind:'navigator_callback',note:'Help with funding options'},'Medicare pays a rebate on specialist visits when you have a GP referral. The NDIS covers permanent and significant disability. A navigator can go through which fits.');
   if(/note|notice|log|diary|record/.test(q)){const note=text.replace(/^.*?\b(add a note|note|noticed|log|diary|record)\b\W*/i,'').trim();return note?tryP({kind:'note',note},'I can add that for '+k.doc+'. Confirm below.'):say('Tell me what you noticed. Start with the word "note".');}
   say('I can help with appointments, referrals, visit prep and funding. For questions about symptoms, results or medicines, your care team is the right place. I can arrange a navigator call.');
 }

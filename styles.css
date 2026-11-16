@@ -802,3 +802,15 @@ html{-webkit-text-size-adjust:100%}
 .top{transition:transform .25s ease}
 .top.tuck{transform:translateY(-102%)}
 @media (prefers-reduced-motion:reduce){.top{transition:none}}
+
+/* Hero photos in use (26 Nov 2026). On a wide screen the photo is the band's background and the people sit on the right.
+   On a tablet or phone the band stays plain and the photo shows as a picture under the words. */
+.band.photo .chatpv{display:none}
+.hero-pic{display:none}
+.band.photo.band-c{background-image:linear-gradient(color-mix(in srgb,var(--sky) 92%,transparent),color-mix(in srgb,var(--sky) 92%,transparent)),var(--hero)}
+.band.photo.band-s{background-position:right 42%}
+@media (max-width:940px){
+  .band.photo,.band.photo.band-c{background-image:none}
+  .band.photo::before{display:block}
+  .band.photo:not(.band-s):not(.band-c) .hero-pic{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:78% center;border-radius:24px;box-shadow:var(--shadow-lg);margin-top:8px}
+}
