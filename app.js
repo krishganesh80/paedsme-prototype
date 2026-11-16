@@ -722,7 +722,7 @@ function findCare(){
   const sum=['Age '+q.age,label(q.concern),q.region];if(q.lang!=='Any')sum.push(q.lang);if(q.culture!=='Any')sum.push(q.culture);if(q.lived)sum.push('Lived experience');if(q.approach!=='Any')sum.push(q.approach==='Holistic'?'Holistic approach':'Mainstream medicine');
   return `<section class="band band-c"><div class="wrap"><div class="band-text">
     <span class="eyebrow">Find care</span>
-    <h1>A paediatrician by video, <em>within 48 hours</em></h1>
+    <h1>Find a <em>paediatrician</em></h1>
     <p class="lead">Tell us what’s going on. We’ll match you with a paediatrician and write the request for your GP.</p>
     <div class="ask"><label class="sr" for="q-said">Tell us about your child</label>
      <textarea id="q-said" rows="3" maxlength="400" placeholder="${SAY[0][1]}">${esc(q.said)}</textarea>
