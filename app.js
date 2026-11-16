@@ -21,6 +21,9 @@ const CLINICIANS=[
  {name:'Dr Grace Liu',role:'Paediatric sleep physician',focus:['sleep'],region:'Australia-wide',tele:true,wait:19,fee:360,gap:170,ages:[1,18],langs:['Mandarin','Cantonese'],lived:null,works:[2]},
  {name:'Dr Noah Bennett',role:'General paediatrician',focus:['development','growth','behaviour'],region:'Toowoomba',tele:true,wait:9,fee:280,gap:90,ages:[0,16],general:true,langs:['Auslan'],lived:'parent of an autistic child',works:[0,5]}];
 CLINICIANS.forEach(c=>c.works=c.works.map(i=>CULT[i]));
+/* Portraits for the made-up clinicians. Each is AI-made and shows no real person. A clinician without one shows initials. */
+const FACES={'Dr Amelia Tran':'img/dr-amelia-tran.jpg','Dr Samuel Okafor':'img/dr-samuel-okafor.jpg','Dr Priya Raman':'img/dr-priya-raman.jpg','Dr Leo Fitzgerald':'img/dr-leo-fitzgerald.jpg','Dr Hannah Weiss':'img/dr-hannah-weiss.jpg','Dr Mateo Alvarez':'img/dr-mateo-alvarez.jpg','Dr Grace Liu':'img/dr-grace-liu.jpg','Dr Noah Bennett':'img/dr-noah-bennett.jpg'};
+CLINICIANS.forEach(c=>{if(FACES[c.name])c.photo=FACES[c.name];});
 const LANGS=[...new Set(CLINICIANS.flatMap(c=>c.langs))].sort();
 const STEPS=['Received','Triaged','Booked','Seen','Letter back'];
 const FLOW=['Referred','Triaged','Booked','Recording','Uploaded','Reporting','Reported'];
@@ -105,6 +108,7 @@ state.fold={};
 state.urgent={ok:false,age:'',what:'',note:false,sent:false,count:14};
 /* Pip presents: which line is showing, whether it is playing, and the viewer's sound and transcript choices. */
 state.pres={i:0,on:false,sound:true,text:false,done:false};
+state.track={week:{sleep:[10.5,11,9.5,10,11,10.5],feeds:[7,6,7,8,6,7],nappies:[6,7,6,5,7,6],weight:[9,9,9.1,9.1,9.1,9.2],meals:[3,3,2,3,3,3],mood:[3,4,2,3,4,3]},today:{sleep:null,feeds:0,nappies:0,weight:null,meals:0,mood:null},own:false};
 state.talk={log:[],step:0,draft:{},saved:[],seq:0,asked:{sleep:38,skin:44,feeding:29,nd:33,unwell:21,none:17}};
 const label=k=>CONCERNS.find(c=>c[0]===k)[1];
 const opts=(arr,v)=>arr.map(o=>{const[k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${k==v?' selected':''}>${esc(t)}</option>`;}).join('');
@@ -199,12 +203,16 @@ function match(q){
     if(q.lived&&c.lived){s+=8;why.push('Lived experience: '+c.lived);}
     if(q.culture&&q.culture!=='Any'&&c.works.includes(q.culture)){s+=8;why.push('Works with '+q.culture);}
     return{c,s,why};
-  }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,4);
+  }).filter(Boolean).sort((a,b)=>b.s-a.s);
 }
+/* Clinicians the rules left out, each with the reason, so a parent can still choose one. Age is the one rule never relaxed. */
+function outside(q){const inn=new Set(match(q).map(x=>x.c.name));
+  return CLINICIANS.filter(c=>!inn.has(c.name)&&q.age>=c.ages[0]&&q.age<=c.ages[1]).map(c=>({c,why:!(c.focus.includes(q.concern)||c.general)?'Mostly sees other concerns':(q.approach&&q.approach!=='Any'&&(c.holistic?'Holistic':'Mainstream')!==q.approach)?(c.holistic?'Holistic approach':'Mainstream medicine'):c.tele?'Outside your area, by video only':'Outside your area, in person only'}));}
 
 const ICO=p=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const I={people:ICO('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c3 .3 5.5 2.7 5.5 5.8"/>'),eye:ICO('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),moon:ICO('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),pulse:ICO('<path d="M2 12h4l2-6 4 12 3-9 2 3h5"/>'),flag:ICO('<path d="M5 21V4h11l-2 4 2 4H5"/>'),pill:ICO('<rect x="3" y="8" width="18" height="8" rx="4"/><path d="M12 8v8"/>'),ask:ICO('<path d="M4 5h16v11H9l-5 4z"/>'),tick:ICO('<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>'),home:ICO('<path d="M4 11l8-7 8 7v9H4z"/>'),cal:ICO('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'),chart:ICO('<path d="M2 20h20M5 20V10M11 20V4M17 20v-7"/>'),folder:ICO('<path d="M3 6h7l2 3h9v10H3z"/>'),book:ICO('<path d="M12 6c-2-1.6-5-2-8-1.5v13c3-.5 6-.1 8 1.5 2-1.6 5-2 8-1.5v-13c-3-.5-6-.1-8 1.5zM12 6v13"/>'),play:ICO('<path d="M8 5l11 7-11 7z" fill="currentColor"/>'),pause:ICO('<path d="M8 5v14M16 5v14"/>'),mic:ICO('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),cam:ICO('<rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.500" r="3.500"/><path d="M8 7l1.500-3h5L16 7"/>'),photos:ICO('<rect x="3" y="7" width="14" height="13" rx="2"/><path d="M7 4h12a2 2 0 0 1 2 2v10M3 17l4-4 3 3 3-3 4 4"/>'),thermo:ICO('<path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0zM12 9v8"/>'),bowl:ICO('<path d="M3 11h18a9 9 0 0 1-18 0zM12 3v5M8 5v3M16 5v3"/>'),bottle:ICO('<path d="M9 3h6v3l2 3v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9l2-3zM7 13h10"/>'),spots:ICO('<path d="M12 3c4 4.500 6 7.600 6 10.500a6 6 0 0 1-12 0C6 10.600 8 7.500 12 3z"/><circle cx="10" cy="13" r=".9"/><circle cx="14" cy="12" r=".9"/><circle cx="12.500" cy="16" r=".9"/>')};
-const PIP_SVG='<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="36" rx="14" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><path d="M13 18h6l2-4 3 7 2-3h9" fill="none" stroke="var(--sun)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="29" r="2.6" fill="var(--ink)"/><circle cx="30" cy="29" r="2.6" fill="var(--ink)"/><path d="M19 35q5 4 10 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/></svg>';
+/* Pip's face: an AI-made animated character, cropped to the head. The same picture is used wherever Pip appears. */
+const PIP_SVG='<img class="pip-img" src="img/pip.jpg" alt="" width="48" height="48">';
 const PATH=['Referral','Paediatrician','Tests','Plan','Follow-up'];
 const view=()=>{const h=location.hash.slice(1);return VIEWS[h]?h:'home';};
 
@@ -424,7 +432,7 @@ const SCRIPTS={
  intro:['Hi, I am Pip. I am an AI presenter, not a doctor.','Learn has short guides on five topics: feeding, sleep, skin, development and being unwell.','A paediatrician approves every health script before I present it.','Under each topic you will find trusted reading from Australian health services.','If something is worrying you, open Talk it through and tell me about it.'],
  'unwell-2':['A video visit is an ordinary appointment, on your phone or computer.','Your GP writes the referral first. PaedsMe cannot book a specialist without one.','The clinic sends you a link and a time by message.','Find a quiet spot with good light, and have your child with you.','Keep your notes, photos and videos open, so you can share what you have noticed.','The clinician sets the plan, and a letter goes back to your GP.','If your child is in danger, do not wait for a visit. Call 000.']};
 const WAITING=['This one is not ready yet.','A paediatrician approves every health script before I present it.','Until then, the trusted reading on this page covers the topic.'];
-const PIP_TALK='<svg class="pip-talk" viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="36" rx="14" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><path d="M13 18h6l2-4 3 7 2-3h9" fill="none" stroke="var(--sun)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g class="eyes"><circle cx="18" cy="29" r="2.6" fill="var(--ink)"/><circle cx="30" cy="29" r="2.6" fill="var(--ink)"/></g><path class="smile" d="M19 35q5 4 10 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/><ellipse class="mouth" cx="24" cy="36.5" rx="3.6" ry="2.6" fill="var(--ink)"/></svg>';
+const PIP_TALK='<span class="pip-ring"><img class="pip-img" src="img/pip.jpg" alt=""></span>';
 const pres={timer:null,token:0};
 const presItem=pid=>{const m=/^(.+)-(\d+)$/.exec(String(pid||'')),t=m&&LEARN.find(x=>x.id===m[1]);return t?t.items[+m[2]]:null;};
 const presIs=pid=>pid==='intro'||!!(presItem(pid)&&presItem(pid)[0]==='v');
@@ -483,23 +491,26 @@ const SAY=[['ADHD, age 7, Brisbane','My daughter is 7 and we think it might be A
    referral by hand. Choosing a clinician creates a referral request the parent takes to their GP. */
 const REQ=['Request ready','With your GP','Clinic triage','Visit booked'];
 const reqKey=()=>state.q.who==='other'?'other':state.child;
+const reqNames=r=>r?(r.names||(r.name?[r.name]:[])):[];
 function reqLetter(id){
-  const r=state.req[id],c=CLINICIANS.find(x=>x.name===r.name),k=state.kids[id],home=[];
+  const r=state.req[id],cs=reqNames(r).map(n=>CLINICIANS.find(x=>x.name===n)).filter(Boolean),k=state.kids[id],home=[];
   if(k){const rec=record(id),nf=state.feeds[id].length,nr=state.rashes[id].length;home.push(plural(rec.n.length,'note')+' over '+plural(rec.weeks,'week'));if(rec.vids)home.push(plural(rec.vids,'video'));if(nr)home.push(plural(nr,'rash entry'));if(nf)home.push(plural(nf,'feed')+' logged');}
   return `<div class="letter"><p><b>To:</b> Dr R. Mehta, GP</p><p><b>About:</b> ${k?k.name+', '+k.age:'a child aged '+r.age}</p>
-    <p>${k?k.name+"'s parent asks":'A parent asks'} for a referral to ${esc(c.name)}, ${esc(c.role.toLowerCase())}${c.rapid?', through PaedsMe Rapid Access':''}.</p>
+    <p>${k?k.name+"'s parent asks":'A parent asks'} for a referral to a paediatrician. ${cs.length>1?'Their choices, in order:':'Their choice:'}</p>
+    <ol class="plain">${cs.map(c=>`<li>${esc(c.name)}, ${esc(c.role.toLowerCase())}${c.rapid?', Rapid Access':''}</li>`).join('')}</ol>
     <p><b>Reason, in the parent's words:</b> ${r.said?'"'+esc(r.said)+'"':esc(label(r.concern))}</p>
     <p><b>From home:</b> ${home.length?home.join(', ')+'.':'nothing logged at home yet.'}</p>
-    <p>Please address it "Dear Paediatrician". It goes to the clinic's practice manager by secure email, in the same format for every clinic.</p>
+    <p>Please address it "Dear Paediatrician", so it is not tied to one doctor.</p>
     <p class="foot">Drafted by PaedsMe from what the parent entered. The GP decides whether to refer.</p></div>`;
 }
 function reqCard(id){
-  const r=state.req[id];if(!r)return '';
-  const c=CLINICIANS.find(x=>x.name===r.name),k=state.kids[id]||{name:'Another child'};
-  const msg=['Take this to your GP. PaedsMe has filled in the request, so the visit is quick. Your GP writes the referral.','Your GP has the request. When they send the referral, it reaches the clinic\'s practice manager in one standard format.','The clinic has the referral. A person there triages every referral by hand. PaedsMe does not triage.',r.date?'Booked for '+fmt(r.date)+'.'+(state.kids[id]?' It is in '+k.name+'\'s appointments.':''):'Booked.'][r.step];
-  return `<section class="panel req"><div class="row"><span class="lab">Referral request · ${k.name}</span><span class="chip ${r.step===3?'good':''}">${REQ[r.step]}</span></div>
-    <div class="big">${esc(c.name)}</div><p class="sub">${esc(c.role)}${c.rapid?' · Rapid Access, a video visit within 48 hours of the referral':''}</p>
-    <ol class="steps">${REQ.map((s,i)=>`<li class="${i<r.step?'done':i===r.step?'now':''}">${s}</li>`).join('')}</ol>
+  const r=state.req[id],names=reqNames(r);if(!r||!names.length)return '';
+  const cs=names.map(n=>CLINICIANS.find(x=>x.name===n)).filter(Boolean),k=state.kids[id]||{name:'Another child'};
+  const msg=['Take this to your GP. We’ve filled in the request, so the visit is quick.','Your GP has the request and writes the referral.','The clinic has the referral. A person there reads every one.',r.date?'Booked with '+cs[0].name+' for '+fmt(r.date)+'.':'Booked.'][r.step];
+  return `<section class="panel req"><div class="row"><span class="lab">Your request · ${k.name}</span><span class="chip ${r.step===3?'good':''}">${REQ[r.step]}</span></div>
+    <ol class="picks">${cs.map((c,i)=>`<li><span class="rk">${i+1}</span><div class="txt"><b>${esc(c.name)}</b><span class="sub">${esc(c.role)}${c.rapid?' · video within 48 hours':''}</span></div>${r.step<3?`<button type="button" data-act="unbook" data-name="${esc(c.name)}" aria-label="Remove ${esc(c.name)}">Remove</button>`:''}</li>`).join('')}</ol>
+    <p class="sub">${r.step<3?(cs.length<3?'You can add '+(3-cs.length)+' more. ':'')+'Your referral isn’t tied to one doctor.':''}</p>
+    <ol class="steps">${REQ.map((x,i)=>`<li class="${i<r.step?'done':i===r.step?'now':''}">${x}</li>`).join('')}</ol>
     <p>${msg}</p>
     ${r.step===0?`<details><summary>See what your GP gets</summary>${reqLetter(id)}</details>`:''}
     ${r.step<3?`<div class="row" style="justify-content:flex-start">${r.step===0?'<button type="button" class="primary" data-act="req-share" data-id="'+id+'">Send to my GP</button>':''}<button type="button" data-act="req-next" data-id="${id}">Next step (demo)</button></div>`:''}</section>`;
@@ -527,12 +538,11 @@ function home(){
     <a class="feat" href="#adhd-care" style="--s:var(--violet-soft)"><span class="dot">${I.chart}</span><h3>ADHD care</h3><p>A clear plan, shared with your GP.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
     <a class="feat" href="#learn" style="--s:var(--sun-soft)"><span class="dot">${I.play}</span><h3>Learn</h3><p>Short guides on feeding, sleep, skin and more.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
    </div></div></section>
-  <section class="sec alt"><div class="wrap">${secHead('How it works','You talk. Pip writes it down.')}
-   <div class="grid3">
-    <div class="feat" style="--s:var(--accent-soft)"><span class="num">1</span><h3>Say it your way</h3><p>Type what you’ve noticed, any time. No need for the right words.</p></div>
-    <div class="feat" style="--s:var(--orange-soft)"><span class="num">2</span><h3>Pip writes the note</h3><p>What you saw, since when, and what worries you most.</p></div>
-    <div class="feat" style="--s:var(--lime-soft)"><span class="num">3</span><h3>You take it with you</h3><p>Show it to your GP, or use it to find a paediatrician.</p></div>
-   </div></div></section>
+  <section class="sec alt"><div class="wrap"><div class="meet">
+    <div class="meet-text"><span class="meet-lab">${I.ask} Talk it through</span><h2>Tell Pip. Pip writes it down.</h2><p>Say what you’ve noticed, any time. You leave with a clear note for your GP.</p>
+     <a class="more big" href="#talk">Talk it through ${ARROW}</a>
+     <div class="who">${PIP_SVG}<div><b>Pip</b><span class="sub">AI helper, not a doctor</span></div></div></div>
+    <div class="meet-art">${flowDiagram()}</div></div></div></section>
   <section class="sec"><div class="wrap closer"><span class="kick">The app</span><h2>Want Pip on your phone?</h2><p>The app isn’t built yet. Tell us you want it.</p>
    <div class="cta-row center"><a class="btn primary cta" href="#get-app" data-cta="home">Get the app ${ARROW}</a></div></div></section>`;
 }
@@ -570,6 +580,24 @@ const isQ=t=>/\?\s*$/.test(t)||/^\s*(how|what|why|when|should|is|are|can|could|d
 const infoFor=t=>{t=String(t).toLowerCase();return INFO.filter(x=>x.rx.test(t)).slice(0,2);};
 const infoCard=x=>`<a class="tinfo" href="${x.url}" target="_blank" rel="noopener"><span class="lab">${esc(x.by)}</span><b>${esc(x.title)}</b><span class="sub">${esc(x.covers)}</span><span class="more">Read it on ${x.url.split('/')[2].replace(/^www\./,'')} ${ARROW}</span></a>`;
 const infoCards=ids=>`<div class="tinfos">${ids.map(id=>INFO.find(x=>x.id===id)).filter(Boolean).map(infoCard).join('')}<p class="foot">General information, not advice about your child. Not yet checked by our doctors.</p></div>`;
+/* Tracking and pictures in Pip (30 Nov 2026). A parent can log sleep, feeds, wet nappies, weight, meals and mood from the
+   conversation, and Pip answers with a picture of the week. Pip keeps count and never judges a number: no targets, no ranges,
+   no "normal". The first six days are a sample week so the pictures are not empty; today is the parent's own. */
+const TRK=[['sleep','Sleep','hours',I.moon,'num','How many hours of sleep last night?',16,.5],['feeds','Feeds','feeds',I.bottle,'tap','feed'],['nappies','Wet nappies','nappies',I.spots,'tap','wet nappy'],['weight','Weight','kg',I.chart,'num','What is their weight, in kilograms?',80,.1],['meals','Meals','meals',I.bowl,'tap','meal'],['mood','Mood','',I.flag,'pick']];
+const MOODS=['Very upset','Upset','Unsettled','Calm','Happy'],WEEK=['Fri','Sat','Sun','Mon','Tue','Wed','Today'];
+function trackChart(id){
+  const T=state.track,d=TRK.find(x=>x[0]===id),vals=[...T.week[id],T.today[id]];
+  if(id==='mood')return `<div class="tchart"><span class="lab">Mood this week</span><div class="moods">${vals.map((v,i)=>`<span class="md" style="--s:var(--${['orange','sun','violet','accent','lime'][v==null?2:v]}-soft)"><b>${v==null?'Not yet':MOODS[v]}</b><span>${WEEK[i]}</span></span>`).join('')}</div></div>`;
+  const mx=Math.max(1,...vals.map(v=>v||0)),H=96,bw=28,gap=12;
+  return `<div class="tchart"><span class="lab">${d[1]} this week${d[4]==='num'?', in '+d[2]:''}</span><svg viewBox="0 0 280 132" role="img" aria-label="${d[1]} for seven days: ${vals.map((v,i)=>WEEK[i]+' '+(v==null?'not logged':v)).join(', ')}">${vals.map((v,i)=>{const h=v?Math.max(4,Math.round(H*v/mx)):4,x=i*(bw+gap);return `<rect x="${x}" y="${H-h+16}" width="${bw}" height="${h}" rx="8" fill="var(--${i===6?'lime':'accent'})"${v?'':' opacity=".25"'}/><text x="${x+bw/2}" y="${H-h+11}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${v?v:''}</text><text x="${x+bw/2}" y="${H+32}" text-anchor="middle" font-size="11" fill="var(--muted)">${WEEK[i]}</text>`;}).join('')}</svg></div>`;
+}
+const flowDiagram=()=>`<div class="flowd" role="img" aria-label="You tell Pip, Pip writes it down, you show your GP"><span class="node main">${PIP_SVG}</span><i></i><span class="node">${I.folder}</span><i></i><span class="node">${I.people}</span></div><div class="flowl"><span>You tell Pip</span><span>Pip writes it down</span><span>You show your GP</span></div>`;
+function talkTrack(id,val){
+  const T=state.track,d=TRK.find(x=>x[0]===id);if(!d)return;state.talk.log.forEach(m=>{delete m.chips;delete m.next;delete m.ask;delete m.pick;});
+  if(d[4]==='tap'){T.today[id]++;T.own=true;talkSay('Logged. '+plural(T.today[id],d[5])+' today.',{chart:id});}
+  else if(val==null)talkSay(d[4]==='pick'?'How do they seem right now?':d[5],d[4]==='pick'?{pick:id}:{ask:id});
+  else{T.today[id]=val;T.own=true;talkSay(d[4]==='pick'?'Logged: '+MOODS[val].toLowerCase()+'.':'Logged: '+val+' '+d[2]+'.',{chart:id});}
+}
 function talkSay(text,extra){state.talk.log.push(Object.assign({t:'pip',text},extra||{}));}
 function talkAsk(){const T=state.talk,q=TALK_Q[T.step-1];if(q)talkSay(q[1],{chips:q[2],n:T.step});}
 function talkSend(text){
@@ -592,19 +620,23 @@ function talkSave(i){const T=state.talk,m=T.log[i];if(!m||m.t!=='note'||m.status
   talkSay('Saved. Who would you like to take it to?',{next:id});}
 function talkView(){
   const T=state.talk;
-  if(!T.log.length)talkSay('Hi, I’m Pip. What’s worrying you about your child? Tell me in your own words. I’m not a doctor, so I can’t tell you what it is. I can help you get it down clearly for someone who can.',{chips:TALK_START});
+  if(!T.log.length)talkSay('Hi, I’m Pip. What’s worrying you about your child? Tell me in your own words. I’m not a doctor, so I can’t tell you what it is. I can help you get it down clearly for someone who can.',{chips:TALK_START,flow:true});
   const lines=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>`<div><dt>${TALK_LAB[k]}</dt><dd>${esc(d[k])}</dd></div>`).join('');
   const log=T.log.map((m,i)=>m.t==='note'
     ?`<div class="tnote"><span class="lab">Your note</span><dl>${lines(m.d)}</dl>${m.status==='pending'?`<div class="acts"><button type="button" class="primary" data-act="talk-save" data-i="${i}">Save this note</button><button type="button" data-act="talk-new">Start again</button></div>`:'<span class="chip good">Saved</span>'}</div>`
-    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-urgent" data-id="${m.next}">An urgent video call</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
+    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.flow?flowDiagram():''}${m.chart?trackChart(m.chart):''}${m.ask?`<form class="tnum" id="trk-form" data-id="${m.ask}"><label class="sr" for="trk-num">Amount</label><input type="number" id="trk-num" min="0" max="${TRK.find(x=>x[0]===m.ask)[6]}" step="${TRK.find(x=>x[0]===m.ask)[7]}" inputmode="decimal"><button class="primary" type="submit">Save</button></form>`:''}${m.pick?`<div class="tchips">${MOODS.map((x,i)=>`<button type="button" data-act="trk-mood" data-v="${i}">${x}</button>`).join('')}</div>`:''}${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My GP</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-urgent" data-id="${m.next}">An urgent video call</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
   const saved=T.saved.length?`<ul class="tsaved">${T.saved.map(n=>`<li><details><summary><b>${esc(n.d.what.length>70?n.d.what.slice(0,67)+'...':n.d.what)}</b><span class="sub">${fmt(n.date)}${n.d.age?' · '+esc(n.d.age):''}</span></summary><dl>${lines(n.d)}</dl></details><div class="acts"><button type="button" data-act="talk-gp" data-id="${n.id}">Copy for my GP</button><button type="button" data-act="talk-find" data-id="${n.id}">Find care with this</button></div></li>`).join('')}</ul>`
     :'<p class="sub">Your saved notes will show here.</p>';
   return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Pip · AI helper</span><h1>Tell Pip what is worrying you</h1><p class="lead">Pip listens and writes it down for you. Pip isn’t a doctor.</p></div></div></div>${sparks}</section>
   <section class="dash fam"><div class="wrap"><div class="talk">
     <section class="panel chat" aria-label="Conversation with Pip"><div class="chat-head">${PIP_SVG}<div><b>Pip</b><span class="sub">Here any time</span></div><button type="button" data-act="talk-new">New conversation</button></div>
      <div class="tlog" id="talk-log" role="log" aria-live="polite">${log}</div>
+     <div class="trkbar" role="group" aria-label="Track something"><span class="lab">Track</span>${TRK.map(d=>`<button type="button" data-act="trk" data-id="${d[0]}">${d[3]}<span>${d[1]}</span></button>`).join('')}</div>
      <form class="tform" id="talk-form"><label class="sr" for="talk-input">Your message to Pip</label><input type="text" id="talk-input" maxlength="400" autocomplete="off" placeholder="Type it the way you would say it"><button class="primary" type="submit">Send</button></form></section>
     <div class="fcol">
+     <section class="panel"><div class="row"><h2>This week</h2><span class="chip quiet">${state.track.own?'Your week':'Sample week'}</span></div>
+      <div class="trkgrid">${TRK.map(d=>{const v=state.track.today[d[0]];return `<button type="button" data-act="trk" data-id="${d[0]}"><span class="ti">${d[3]}</span><b>${d[0]==='mood'?(v==null?'Add':MOODS[v]):(v?v+(d[4]==='num'?' '+d[2]:''):d[4]==='tap'?'0':'Add')}</b><span class="sub">${d[1]} today</span></button>`;}).join('')}</div>
+      <p class="foot">Pip keeps count. It doesn’t judge the numbers.</p></section>
      <section class="panel"><div class="row"><h2>Your notes</h2><span class="chip quiet">${T.saved.length} saved</span></div>${saved}<p class="foot">Stays on this device.</p></section>
      <section class="panel urgent"><h2>If it is urgent</h2><ul class="plain"><li><b>000</b> if your child is in danger</li><li><b>1800 022 222</b> healthdirect, a nurse at any hour</li><li><b>13 43 25 84</b> 13 HEALTH, in Queensland</li></ul><a class="btn primary" href="#urgent">Speak to a paediatrician by video</a><p class="foot">A fee applies for the video call.</p></section>
     </div></div></div></section>`;
@@ -674,8 +706,10 @@ function urgentView(){
 }
 function findCare(){
   const q=state.q, m=match(q), id=reqKey(), k=state.kids[id]||{name:'another child'}, rq=state.req[id];
+  const top=m.slice(0,3),rest=[...m.slice(3).map(x=>({c:x.c,why:'Also a fit'})),...outside(q)],names=reqNames(rq),locked=!!(rq&&rq.step===3);
+  const face=c=>c.photo?`<img class="ava2 face" src="${c.photo}" alt="" loading="lazy">`:`<span class="ava2" aria-hidden="true">${ini(c.name)}</span>`;
+  const pickBtn=c=>{const on=names.includes(c.name);return `<button type="button" class="${on?'chosen':'primary'}" data-act="book" data-name="${esc(c.name)}" aria-pressed="${on}"${locked?' disabled':''}>${on?TICK+' Chosen':'Choose'}</button>`;};
   const hints=[];
-  if(!q.ref)hints.push('No referral yet? Pick a doctor and we’ll write the request for your GP.');
   if(q.concern==='behaviour')hints.push(q.age<17?'For ADHD, a paediatrician does the assessment and your GP does the regular visits after that.':'PaedsMe ADHD care is for children under 17.');
   else if(q.age>18)hints.push('For this concern, PaedsMe sees children and young people up to 18.');
   if(PARKED_ON&&q.concern==='seizures')hints.push('The paediatrician may order an EEG. It can be booked through PaedsMe Diagnostics at the same time.');
@@ -697,7 +731,7 @@ function findCare(){
      :`<div class="examples"><span>Try</span>${SAY.map((s,i)=>`<button type="button" class="ex" data-act="say" data-i="${i}">${s[0]}</button>`).join('')}</div>`}
    </div></div>${sparks}</section>
   <section class="sec" id="results"><div class="wrap duo">
-   <form class="filter" id="find-form" aria-label="About your child"><details class="f-all" data-fold="find"${(typeof innerWidth==='number'&&innerWidth<=940)&&!state.fold.find?'':' open'}><summary><h2>About your child</h2><span class="sub">Age ${q.age} · ${esc(q.region)}</span></summary>
+   <div class="side"><form class="filter" id="find-form" aria-label="About your child"><details class="f-all" data-fold="find"${(typeof innerWidth==='number'&&innerWidth<=940)&&!state.fold.find?'':' open'}><summary><h2>About your child</h2><span class="sub">Age ${q.age} · ${esc(q.region)}</span></summary>
     <div class="field"><label for="q-who">Who is it for?</label><select id="q-who">${opts([...Object.entries(state.kids).map(([i,c])=>[i,c.name+', '+c.age]),['other','Another child']],id)}</select></div>
     <div class="two"><div class="field"><label for="q-age">Age</label><input type="number" id="q-age" min="0" max="18" value="${q.age}"></div>
     <div class="field"><label for="q-region">Where you live</label><select id="q-region">${opts(REGIONS,q.region)}</select></div></div>
@@ -712,18 +746,20 @@ function findCare(){
      <label class="check"><input type="checkbox" id="q-ref"${q.ref?' checked':''}><span>We already have a GP referral</span></label>
      </details>
    </form>
+    ${reqCard(id)}</div>
    <div class="res">
-    ${reqCard(id)}
-    <div class="res-head"><h2>${plural(m.length,'match')}</h2><p class="sub">${sum.map(esc).join(' · ')}</p></div>
-    ${hints.map(h=>`<p class="callout">${esc(h)}</p>`).join('')}
-    ${m.length?`<ol class="docs">${m.map(({c,why},i)=>{const p=fees(c,q),mine=rq&&rq.name===c.name;return `<li class="doc${i===0?' top':''}" style="--s:var(--${TINT[i%5]}-soft)">
-      <span class="ava2" aria-hidden="true">${ini(c.name)}</span>
-      <div class="doc-main">${c.rapid?'<span class="tag">Rapid Access</span>':i===0?'<span class="tag alt">Top match</span>':''}<h3>${esc(c.name)}</h3><p class="sub">${esc(c.role)} · ${esc(c.region)} · ${c.holistic?'Holistic approach':'Mainstream medicine'}</p>
-       <ul class="why">${why.filter(w=>!/^(About \d+ days|Rapid Access)/.test(w)).map(w=>`<li>${TICK}${esc(w)}</li>`).join('')}</ul></div>
-      <div class="doc-side"><div class="wait">${c.rapid?'<b>48</b><span>hours to a video visit<br>after your referral</span>':`<b>${c.wait}</b><span>days to a first visit</span>`}</div>
-       <p class="price">${p.adhd?'ADHD assessment visit, about $'+p.fee:'First visit $'+p.fee}<span>about $${p.gap} after Medicare</span></p>
-       <button class="primary" data-act="book" data-name="${esc(c.name)}"${mine?' disabled':''}>${mine?'Requested':q.ref?'Send my referral':'Ask for a referral'}</button></div></li>`;}).join('')}</ol>`
-     :`<div class="empty"><h3>No clinician in the network fits yet</h3><p>Allow video consults or any approach, or a navigator can search outside the network.</p></div>`}
+    <div class="res-head"><h2>${top.length?'Your top '+(top.length===1?'match':top.length):'No match yet'}</h2><p class="sub">${sum.map(esc).join(' · ')}</p></div>
+    ${top.length?'<p class="sub">Choose up to three. Your referral isn’t tied to one doctor.</p>':''}
+    ${hints.slice(0,2).map(h=>`<p class="callout">${esc(h)}</p>`).join('')}
+    ${top.length?`<ol class="docs">${top.map(({c,why},i)=>{const p=fees(c,q);return `<li class="doc${names.includes(c.name)?' picked':''}" style="--s:var(--${TINT[i%5]}-soft)">
+      <div class="doc-face">${face(c)}<span class="rank">${['1st','2nd','3rd'][i]}</span></div>
+      <div class="doc-main"><h3>${esc(c.name)}</h3><p class="sub">${esc(c.role)} · ${esc(c.region)}${c.holistic?' · Holistic approach':''}</p>
+       <ul class="why">${why.filter(w=>!/^(About \d+ days|Rapid Access)/.test(w)).slice(0,3).map(w=>`<li>${TICK}${esc(w)}</li>`).join('')}</ul></div>
+      <div class="doc-side"><div class="wait">${c.rapid?'<b>48 hours</b><span>to a video visit</span>':`<b>${c.wait} days</b><span>to a first visit</span>`}</div>
+       <p class="price">${p.adhd?'About $':'$'}${p.fee}<span>about $${p.gap} after Medicare</span></p>${pickBtn(c)}</div></li>`;}).join('')}</ol>`
+     :`<div class="empty"><h3>No one fits all of that yet</h3><p>Try allowing video visits, or choose from the other clinicians below.</p></div>`}
+    ${rest.length?`<details class="others" data-fold="others"${state.fold.others===false?'':' open'}><summary><h3>Other clinicians</h3><span class="sub">${rest.length} more you can choose</span></summary>
+     <ul class="orows">${rest.map(({c,why})=>`<li class="${names.includes(c.name)?'picked':''}">${face(c)}<div class="txt"><b>${esc(c.name)}</b><span class="sub">${esc(c.role)} · ${esc(c.region)}</span><span class="sub">${esc(why)} · ${c.rapid?'48 hours':c.wait+' days'}</span></div>${pickBtn(c)}</li>`).join('')}</ul></details>`:''}
     ${q.concern==='behaviour'?`<a class="linkcard" href="#adhd-care"><span><b>How ADHD care works, and what it costs</b><span class="sub">Three steps, shared between a paediatrician and your GP</span></span>${ARROW}</a>`:''}
     <p class="foot">Doctors can’t pay to appear higher. This request is for ${esc(k.name)}.</p>
    </div></div></section>
@@ -1017,6 +1053,8 @@ document.addEventListener('click',e=>{
   else if(a==='sc-done'){const s=state.shared[+b.dataset.i];s.gpDue=addDays(TODAY,s.every);s.script=addDays(TODAY,s.every);toast('Visit summary sent to '+s.paed);}
   else if(a==='sc-esc'){const s=state.shared[+b.dataset.i];s.asked=true;state.escal.push({c:s.c,g:s.g,from:'Dr R. Mehta, GP',date:TODAY,why:'Asked for a review before the yearly date.'});toast('Sent. '+s.paed+' will offer a video time.');}
   else if(a==='talk-chip'){talkSend(b.textContent);render.focusTalk=true;}
+  else if(a==='trk'){talkTrack(b.dataset.id);}
+  else if(a==='trk-mood'){talkTrack('mood',+b.dataset.v);}
   else if(a==='talk-save'){talkSave(+b.dataset.i);}
   else if(a==='talk-new'){Object.assign(state.talk,{log:[],step:0,draft:{}});}
   else if(a==='talk-nurse'){state.talk.log.forEach(m=>{delete m.next;});talkSay('healthdirect is 1800 022 222, at any hour, and a nurse answers. In Queensland you can also call 13 HEALTH on 13 43 25 84. If your child is in danger, call 000.');}
@@ -1030,9 +1068,10 @@ document.addEventListener('click',e=>{
   else if(a==='talk-learn'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);state.learnOpen=talkTopic(n?n.d.what:'');state.playing=null;location.hash='learn';return;}
   else if(a==='wait-reset'){state.wait.joined=false;}
   else if(a==='survey'){toast('The parent survey is not open yet. The link will sit here.');return;}
-  else if(a==='book'){book(b.dataset.name);}
+  else if(a==='book'){if(reqNames(state.req[reqKey()]).includes(b.dataset.name))unbook(b.dataset.name);else book(b.dataset.name);}
+  else if(a==='unbook'){unbook(b.dataset.name);}
   else if(a==='req-share'){const r=state.req[b.dataset.id];if(r&&r.step===0){r.step=1;toast('Sent to Dr R. Mehta, GP');}}
-  else if(a==='req-next'){const rid=b.dataset.id,r=state.req[rid];if(r&&r.step<3){r.step++;if(r.step===3){const c=CLINICIANS.find(x=>x.name===r.name),d=addDays(TODAY,c.rapid?2:c.wait);r.date=d;
+  else if(a==='req-next'){const rid=b.dataset.id,r=state.req[rid];if(r&&r.step<3){r.step++;if(r.step===3){const c=CLINICIANS.find(x=>x.name===reqNames(r)[0]),d=addDays(TODAY,c.rapid?2:c.wait);r.date=d;
       if(state.kids[rid])state.appts.push({kid:rid,date:d,time:'10:00 am',what:'First visit, '+c.role.toLowerCase(),who:c.name,mode:c.rapid||c.region!==state.q.region?'Video':'In person',prep:['Add notes, photos and videos this week','Write down your questions']});toast('Visit booked for '+fmt(d));}}}
   else if(a==='ref-next'){const r=state.refs[+b.dataset.i];r.step++;toast(r.id+': '+STEPS[r.step].toLowerCase());}
   else if(a==='study-next'){const t=state.studies.find(x=>x.id===b.dataset.id);if(t&&t.s<5){t.s++;toast(t.id+' moved to '+FLOW[t.s].toLowerCase());}}
@@ -1086,6 +1125,7 @@ document.addEventListener('submit',e=>{
     if(!U.age){toast('Choose your child\'s age');return;}
     if(!U.what){toast('Say what is happening first');return;}
     U.sent=true;U.count++;toast('Request sent. This is a demo, so nothing was charged.');window.scrollTo(0,0);render();return;}
+  if(e.target.id==='trk-form'){const id=e.target.dataset.id,d=TRK.find(x=>x[0]===id),v=parseFloat($('trk-num').value);if(!(v>0)||v>d[6]){toast('Type a number first');return;}talkTrack(id,Math.round(v*10)/10);render();return;}
   if(e.target.id==='talk-form'){const v=$('talk-input').value;if(!v.trim()){toast('Type a few words first');return;}talkSend(v);render.focusTalk=true;render();return;}
   if(e.target.id==='wait-form'){const em=$('wait-email').value.trim(),w=state.wait;if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Type your email first');return;}
     w.joined=true;w.joins++;w.platform=(document.querySelector('input[name="wplat"]:checked')||{}).value||null;if(w.platform)w.plat[w.platform]++;
@@ -1110,13 +1150,18 @@ const ROLE={
 const EMERG=/\b(000|emergency|not breathing|stopped breathing|isn'?t breathing|struggling to breathe|choking|not responding|can'?t breathe|cannot breathe|unconscious|unresponsive|turning blue|won'?t wake|overdose|suicid|seizure (that )?(won'?t|will not|isn'?t|is not) stop)/i;
 const KINDS={book:'parent',reschedule:'parent',renew_referral:'parent',note:'parent',send_recalls:'staff',send_renewal_prompts:'staff',navigator_callback:'any'};
 
-function book(name){const c=CLINICIANS.find(x=>x.name===name);if(!c)return;const id=reqKey();
-  state.req[id]={name:c.name,step:state.q.ref?2:0,concern:state.q.concern,age:state.q.age,said:state.q.said||''};
-  toast(state.q.ref?'Your referral is on its way to the clinic':'Request ready. Next: your GP.');}
+function book(name){const c=CLINICIANS.find(x=>x.name===name);if(!c)return;const id=reqKey();let r=state.req[id];
+  if(!r||r.step===3)r=state.req[id]={names:[],step:state.q.ref?2:0,concern:state.q.concern,age:state.q.age,said:state.q.said||''};
+  r.names=reqNames(r);delete r.name;
+  if(r.names.includes(name))return;
+  if(r.names.length>=3){toast('You can choose up to three. Remove one first.');return;}
+  r.names.push(name);Object.assign(r,{concern:state.q.concern,age:state.q.age,said:state.q.said||r.said||''});
+  toast(r.names.length===1?(state.q.ref?'Chosen. Your referral is on its way to the clinic.':'Chosen. Next: your GP.'):'Added as choice '+r.names.length+'.');}
+function unbook(name){const id=reqKey(),r=state.req[id];if(!r||r.step===3)return;r.names=reqNames(r).filter(n=>n!==name);delete r.name;if(!r.names.length)delete state.req[id];}
 const kidAppts=()=>state.appts.filter(a=>a.kid===state.child).sort((a,b)=>a.date<b.date?-1:1);
 
 function describe(a){const k=state.kids[state.child];
-  if(a.kind==='book'){const c=CLINICIANS.find(x=>x.name===a.name);const p=fees(c,state.q);return{title:'Ask for a referral to '+c.name,detail:`${c.role}, for ${k.name}. ${c.rapid?'Rapid Access: a video visit within 48 hours of the referral.':'About '+c.wait+' days to a first visit.'} The request goes to your GP first. ${p.adhd?'About $':'$'}${p.fee}, about $${p.gap} out of pocket.`};}
+  if(a.kind==='book'){const c=CLINICIANS.find(x=>x.name===a.name);const p=fees(c,state.q);return{title:'Add '+c.name+' to your referral request',detail:`${c.role}, for ${k.name}. ${c.rapid?'Rapid Access: a video visit within 48 hours of the referral.':'About '+c.wait+' days to a first visit.'} The request goes to your GP first. ${p.adhd?'About $':'$'}${p.fee}, about $${p.gap} out of pocket.`};}
   if(a.kind==='reschedule')return{title:'Ask to reschedule',detail:`${a.what}, currently ${fmt(a.date)}. The clinic replies with new times.`};
   if(a.kind==='renew_referral')return{title:'Ask the GP to renew the referral',detail:`${k.name}'s referral ends ${fmt(k.refUntil)}.`};
   if(a.kind==='note')return{title:'Add a note for '+k.doc,detail:a.note};
@@ -1176,7 +1221,7 @@ function tools(){return[
   {name:'find_clinicians',description:'Search the PaedsMe clinician network. Returns up to 4 matches with role, region, days to a first visit, fee, out-of-pocket gap and why each fits. Use before suggesting or booking anyone.',
    inputSchema:{type:'object',properties:{age:{type:'number',description:'Child age in years'},concern:{type:'string',enum:CONCERNS.map(c=>c[0])},region:{type:'string',enum:REGIONS},video_ok:{type:'boolean'}},required:['age','concern']},
    execute(i){const c=String(i.concern);if(!CONCERNS.some(x=>x[0]===c))throw new Error('concern must be one of: '+CONCERNS.map(x=>x[0]).join(', '));
-     return match({age:Math.min(30,Math.max(0,Number(i.age)||0)),concern:c,region:REGIONS.includes(i.region)?i.region:state.q.region,tele:i.video_ok!==false}).map(({c,why})=>{const p=fees(c,{concern:String(i.concern)});return{name:c.name,role:c.role,region:c.region,days_to_first_visit:c.rapid?2:c.wait,rapid_access:!!c.rapid,approach:c.holistic?'holistic':'mainstream',fee:p.fee,gap:p.gap,video:c.tele,why};});}},
+     return match({age:Math.min(30,Math.max(0,Number(i.age)||0)),concern:c,region:REGIONS.includes(i.region)?i.region:state.q.region,tele:i.video_ok!==false}).slice(0,4).map(({c,why})=>{const p=fees(c,{concern:String(i.concern)});return{name:c.name,role:c.role,region:c.region,days_to_first_visit:c.rapid?2:c.wait,rapid_access:!!c.rapid,approach:c.holistic?'holistic':'mainstream',fee:p.fee,gap:p.gap,video:c.tele,why};});}},
   {name:'propose_action',description:'Show the user a confirm card for one action; nothing changes until they tap Confirm. Returns whether the card was shown. Kinds: book (needs clinician_name), reschedule (appointment = words from its name), renew_referral, note (needs note: what the parent noticed, in their own words), navigator_callback (note = what they need), and for staff only send_recalls and send_renewal_prompts.',
    inputSchema:{type:'object',properties:{kind:{type:'string',enum:Object.keys(KINDS)},clinician_name:{type:'string'},appointment:{type:'string'},note:{type:'string'}},required:['kind']},
    execute(i){return propose({kind:String(i.kind),name:String(i.clinician_name||''),appointment:String(i.appointment||''),note:String(i.note||'')});}},

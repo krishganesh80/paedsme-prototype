@@ -813,3 +813,94 @@ html{-webkit-text-size-adjust:100%}
   .band-s.photo{padding-bottom:calc(42vw + 84px)}
   .band-s.photo::before{aspect-ratio:auto;height:calc(42vw + 70px);background-position:center,center 32%}
 }
+
+/* Matching (29 Nov 2026): a ranked top three, then everyone else. A parent can choose up to three. */
+.doc-face{position:relative;flex:none;align-self:start}
+.ava2.face{object-fit:cover;padding:0;background:var(--bg)}
+.doc .ava2{width:72px;height:72px;border-radius:22px}
+.rank{position:absolute;left:-8px;top:-8px;min-width:38px;padding:3px 8px;border-radius:99px;background:var(--ink);color:var(--surface);font-family:var(--display);font-weight:700;font-size:.82rem;text-align:center;box-shadow:var(--shadow)}
+.doc:first-child .rank{background:var(--lime);color:#263238}
+.doc.picked,.orows li.picked{border-color:var(--lime);background:color-mix(in srgb,var(--lime-soft) 55%,var(--surface))}
+.doc.top{border-color:transparent}
+.wait b{font-size:1.5rem;white-space:nowrap}
+.price{font-size:1.05rem}
+button.chosen{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--lime-soft);border-color:var(--lime);color:var(--ink)}
+button.chosen svg{color:var(--lime-deep)}
+.picks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.picks li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:var(--bg)}
+.picks .rk{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--ink);color:var(--surface);font-family:var(--display);font-weight:700;font-size:.9rem}
+.picks .txt,.orows .txt{display:flex;flex-direction:column;flex:1;min-width:0}
+.picks button{min-height:40px;padding:6px 12px;font-size:.84rem}
+.others{margin-top:clamp(20px,3vw,32px)}
+.others>summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-height:44px;padding:6px 0}
+.others>summary::-webkit-details-marker{display:none}
+.others>summary h3{font-size:1.25rem}
+.others>summary::after{content:"+";margin-left:auto;font-family:var(--display);font-size:1.6rem;line-height:1}
+.others[open]>summary::after{content:"−"}
+.orows{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.orows li{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:20px;background:var(--surface);border:2px solid transparent;box-shadow:var(--shadow)}
+.orows .ava2{width:48px;height:48px;border-radius:16px;font-size:1rem}
+.orows b{font-family:var(--display);font-size:1.02rem}
+.orows button{flex:none;min-height:44px}
+@media (max-width:720px){.doc .ava2{width:56px;height:56px;border-radius:18px}.orows li{flex-wrap:wrap}.orows button{width:100%}.wait b{font-size:1.3rem}}
+
+.duo{grid-template-columns:340px minmax(0,1fr)}
+@media (max-width:940px){.duo{grid-template-columns:minmax(0,1fr)}}
+.side{display:flex;flex-direction:column;gap:20px;min-width:0}
+.side .filter{position:static}
+.side .req{padding:18px;border-radius:24px}
+.side .req .steps{flex-wrap:wrap}
+
+/* Pip as a character (30 Nov 2026): an animated human face in a ringed circle, on soft gradient cards, with pictures in the
+   conversation. The look follows a reference the founder chose; the character and every asset are PaedsMe's own. */
+.pip-img{display:block;border-radius:50%;object-fit:cover;background:#8FB1C9;flex:none}
+.chat-head .pip-img,.pv-head .pip-img,.who .pip-img{width:52px;height:52px;box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent)}
+.pip-fab .pip-img,.pip-head .pip-img{width:40px;height:40px;box-shadow:0 0 0 2px var(--surface)}
+.pip.thinking .pip-head .pip-img{animation:bob .9s ease-in-out infinite}
+.pip-ring{display:block;width:clamp(112px,15vw,164px);aspect-ratio:1;border-radius:50%;padding:6px;background:var(--surface);box-shadow:0 0 0 5px var(--accent)}
+.pip-ring .pip-img{width:100%;height:100%}
+.pres.on .pip-ring{animation:pipbob 1.6s ease-in-out infinite}
+.meet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(20px,3vw,40px);background:var(--bg);border-radius:36px;padding:clamp(18px,2.6vw,32px);align-items:stretch}
+.meet-text{display:flex;flex-direction:column;gap:18px;padding:clamp(8px,2vw,28px)}
+.meet-lab{display:inline-flex;gap:8px;align-items:center;color:var(--accent);font-weight:700;font-size:1.05rem}
+.meet-lab svg{width:22px;height:22px}
+.meet h2{font-size:clamp(1.7rem,3.2vw,2.4rem);letter-spacing:-.022em;line-height:1.12}
+.meet p{font-size:1.1rem;line-height:1.6;max-width:36ch}
+.more.big{font-size:1.2rem;margin-top:8px}
+.who{display:flex;gap:16px;align-items:center;margin-top:auto;padding-top:20px}
+.who div{display:flex;flex-direction:column}
+.who b{font-family:var(--display);font-size:1.1rem}
+.meet-art{border-radius:28px;min-height:300px;background:linear-gradient(135deg,#C9D3F6 0%,#C6E3F8 55%,#C4EEF6 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:clamp(20px,3vw,36px)}
+.flowd{display:flex;align-items:center;justify-content:center;width:100%;max-width:520px}
+.flowd .node{width:clamp(60px,9vw,96px);aspect-ratio:1;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none;color:#3E4A5C;box-shadow:0 0 0 6px rgba(255,255,255,.5)}
+.flowd .node svg{width:42%;height:42%}
+.flowd .node.main{width:clamp(96px,15vw,168px);box-shadow:0 0 0 5px #fff,0 0 0 10px #1C9DBF}
+.flowd .node.main .pip-img{width:100%;height:100%;box-shadow:none}
+.flowd i{flex:1;min-width:16px;max-width:84px;border-top:3px dotted rgba(62,74,92,.45)}
+.flowl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;max-width:520px;text-align:center;font-weight:700;font-size:.9rem;color:#3E4A5C}
+.tlog .flowd{max-width:360px;align-self:flex-start;background:linear-gradient(135deg,#C9D3F6,#C4EEF6);border-radius:20px 20px 0 0;padding:18px 16px 8px}
+.tlog .flowd .node{width:56px}.tlog .flowd .node.main{width:84px;box-shadow:0 0 0 3px #fff,0 0 0 6px #1C9DBF}
+.tlog .flowl{max-width:360px;align-self:flex-start;background:linear-gradient(135deg,#C9D3F6,#C4EEF6);border-radius:0 0 20px 20px;padding:4px 12px 14px;font-size:.78rem;margin-top:-10px}
+/* Tracking. */
+.trkbar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--surface);overflow-x:auto;scrollbar-width:none}
+.trkbar::-webkit-scrollbar{display:none}
+.trkbar button{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 12px;font-size:.84rem}
+.trkbar button svg{width:18px;height:18px}
+.trkgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.trkgrid button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;border-radius:18px;border:0;background:var(--bg);min-height:92px}
+.trkgrid .ti{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--surface)}
+.trkgrid .ti svg{width:18px;height:18px}
+.trkgrid b{font-family:var(--display);font-size:1.15rem}
+.trkgrid .sub{font-size:.76rem}
+.tchart{align-self:flex-start;width:min(100%,340px);background:var(--surface);border-radius:20px;padding:14px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+.tchart svg{width:100%;height:auto}
+.moods{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.md{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px;border-radius:12px;background:var(--s);font-size:.62rem;text-align:center}
+.md b{font-size:.62rem;line-height:1.2}
+.tnum{display:flex;gap:8px;align-self:flex-start;width:min(100%,280px)}
+.tnum input{flex:1;min-width:0;min-height:48px;font-size:1.05rem}
+.tnum button{min-height:48px}
+@media (max-width:900px){.meet{grid-template-columns:minmax(0,1fr)}.meet-art{min-height:220px;order:-1}}
+@media (prefers-reduced-motion:reduce){.pres.on .pip-ring,.pip.thinking .pip-head .pip-img{animation:none}}
+.meet .who b,.meet .who .sub{text-transform:none;letter-spacing:0}
+.meet .who .sub{font-size:.9rem;font-weight:500;color:var(--muted)}
