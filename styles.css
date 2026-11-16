@@ -796,3 +796,20 @@ html{-webkit-text-size-adjust:100%}
   .band.photo::before{display:block}
   .band.photo:not(.band-s):not(.band-c) .hero-pic{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:78% center;border-radius:24px;box-shadow:var(--shadow-lg);margin-top:8px}
 }
+
+/* Hero photos, second pass (28 Nov 2026). Seven pages have a photo. The aqua wash over it is half what it was.
+   Wide screens: the photo sits on the right and fades in from the left. Tablets and phones: the same idea turned on its side,
+   the photo across the bottom of the band, fading in from the top. Pages with a form show the photo as a picture under the words. */
+.band.photo:not(.band-c){background-image:none}
+.hero-pic{display:none!important}
+.band.photo-in .hero-pic{display:block!important;width:100%;max-width:520px;aspect-ratio:16/9;object-fit:cover;object-position:center 30%;border-radius:24px;box-shadow:var(--shadow-lg);margin-top:4px}
+@media (min-width:941px){
+  .band.photo:not(.band-c)::before{display:block;content:"";position:absolute;inset:0 0 0 auto;height:100%;aspect-ratio:16/9;z-index:-1;background:linear-gradient(90deg,var(--sky) 0%,color-mix(in srgb,var(--sky) 48%,transparent) 30%,color-mix(in srgb,var(--sky) 15%,transparent) 100%),var(--hero) center/cover no-repeat}
+  .band.photo.band-c{background-image:linear-gradient(color-mix(in srgb,var(--sky) 46%,transparent),color-mix(in srgb,var(--sky) 46%,transparent)),var(--hero);background-size:cover;background-position:center}
+}
+@media (max-width:940px){
+  .band.photo,.band.photo.band-c{background-image:none;padding-bottom:calc(56.25vw + 48px)}
+  .band.photo::before,.band.photo.band-c::before{display:block;content:"";position:absolute;inset:auto 0 0 0;width:100%;height:auto;aspect-ratio:16/9;z-index:-1;background:linear-gradient(180deg,var(--sky) 0%,color-mix(in srgb,var(--sky) 48%,transparent) 26%,color-mix(in srgb,var(--sky) 8%,transparent) 100%),var(--hero) center/cover no-repeat}
+  .band-s.photo{padding-bottom:calc(42vw + 84px)}
+  .band-s.photo::before{aspect-ratio:auto;height:calc(42vw + 70px);background-position:center,center 32%}
+}

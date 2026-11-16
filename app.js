@@ -951,10 +951,12 @@ function teamView(){
 }
 /* Hero photos (24 Nov 2026). A page's band takes a photo behind its words once a file is listed here, for example
    {home:'img/hero-home.jpg'}. The list is empty until the photos exist, so nothing is requested and the aqua band shows. */
-const HERO={home:'img/hero-home.jpg',talk:'img/hero-talk.jpg','find-care':'img/hero-find-care.jpg'};
+const HERO={home:'img/hero-home.jpg',talk:'img/hero-talk.jpg','find-care':'img/hero-find-care.jpg','adhd-care':'img/hero-adhd-care.jpg',learn:'img/hero-learn.jpg',urgent:'img/hero-urgent.jpg','get-app':'img/hero-get-app.jpg'};
 const heroOk={};
-function paintHero(){const v=view(),b=document.querySelector('#view .band');if(!b||!heroOk[v])return;b.classList.add('photo');b.style.setProperty('--hero','url("'+HERO[v]+'")');
-  const w=b.querySelector('.wrap');if(w&&!w.querySelector('.hero-pic')){const im=document.createElement('img');im.className='hero-pic';im.alt='';im.src=HERO[v];w.appendChild(im);}}
+function paintHero(){const v=view(),b=document.querySelector('#view .band');if(!b||!heroOk[v])return;
+  /* A band with a form or a card on its right shows the photo as a picture under the words; the others carry it behind them. */
+  const inl=!!b.querySelector('.band-side .panel,.band-side .fcard,.band-side form');b.classList.add(inl?'photo-in':'photo');b.style.setProperty('--hero','url("'+HERO[v]+'")');
+  const host=inl?b.querySelector('.band-text'):null;if(host&&!host.querySelector('.hero-pic')){const im=document.createElement('img');im.className='hero-pic';im.alt='';im.src=HERO[v];host.appendChild(im);}}
 function loadHeroes(){Object.keys(HERO).forEach(k=>{const im=new Image();im.onload=()=>{heroOk[k]=true;paintHero();};im.src=HERO[k];});}
 const VIEWS={home,talk:talkView,urgent:urgentView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
 function render(){
