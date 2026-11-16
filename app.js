@@ -19,9 +19,7 @@ const CLINICIANS=[
  {name:'Dr Hannah Weiss',role:'Paediatric cardiologist',focus:['heart'],region:'Brisbane',tele:true,wait:28,fee:400,gap:180,ages:[0,18],langs:['German'],lived:'parent of a child with a heart condition',works:[]},
  {name:'Dr Mateo Alvarez',role:'Adolescent paediatrician',focus:['behaviour','headache','sleep'],region:'Gold Coast',tele:true,wait:30,fee:340,gap:160,ages:[10,16],langs:['Spanish'],lived:'has ADHD',works:[6],holistic:true},
  {name:'Dr Grace Liu',role:'Paediatric sleep physician',focus:['sleep'],region:'Australia-wide',tele:true,wait:19,fee:360,gap:170,ages:[1,18],langs:['Mandarin','Cantonese'],lived:null,works:[2]},
- {name:'Dr Noah Bennett',role:'General paediatrician',focus:['development','growth','behaviour'],region:'Toowoomba',tele:true,wait:9,fee:280,gap:90,ages:[0,16],general:true,langs:['Auslan'],lived:'parent of an autistic child',works:[0,5]},
- {name:'Dr Isla Moreno',role:'Child and adolescent psychiatrist',focus:['behaviour','sleep'],region:'Australia-wide',tele:true,wait:26,fee:520,gap:290,ages:[17,24],langs:['Spanish','Portuguese'],lived:null,works:[6]},
- {name:'Dr Daniel Mercer',role:'Adult psychiatrist',focus:['behaviour','sleep'],region:'Australia-wide',tele:true,wait:33,fee:540,gap:300,ages:[25,99],langs:[],lived:'has ADHD',works:[]}];
+ {name:'Dr Noah Bennett',role:'General paediatrician',focus:['development','growth','behaviour'],region:'Toowoomba',tele:true,wait:9,fee:280,gap:90,ages:[0,16],general:true,langs:['Auslan'],lived:'parent of an autistic child',works:[0,5]}];
 CLINICIANS.forEach(c=>c.works=c.works.map(i=>CULT[i]));
 const LANGS=[...new Set(CLINICIANS.flatMap(c=>c.langs))].sort();
 const STEPS=['Received','Triaged','Booked','Seen','Letter back'];
@@ -101,13 +99,16 @@ state.feedType=null;
 /* Demand for the app. The website comes first; the app is built only if families ask for it. Counts only: an email typed into the list is never kept. */
 state.wait={joined:false,platform:null,visits:1240,taps:{header:96,home:71,talk:45},joins:87,plat:{iPhone:52,Android:35},uses:{'Talking a worry through':63,'Notes for the doctor':57,'Feeding':41,'Sleep':48,'Rashes':33,'Finding care':38,'Videos and guides':22}};
 /* Talk it through: the conversation with Pip, the note being built, and the notes the parent has saved. */
+/* Pip presents: which line is showing, whether it is playing, and the viewer's sound and transcript choices. */
+state.pres={i:0,on:false,sound:true,text:false,done:false};
 state.talk={log:[],step:0,draft:{},saved:[],seq:0,asked:{sleep:38,skin:44,feeding:29,nd:33,unwell:21,none:17}};
 const label=k=>CONCERNS.find(c=>c[0]===k)[1];
 const opts=(arr,v)=>arr.map(o=>{const[k,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(k)}"${k==v?' selected':''}>${esc(t)}</option>`;}).join('');
 const SEED=JSON.parse(JSON.stringify(state));
 /* ADHD shared care, as proposed by the clinical lead (15 Nov 2026). Every figure is indicative: [fee, out of pocket]. */
 const CARE={first:[600,350],second:[350,200],gp:[110,40,50],gpOnly:1000};
-const BANDS=[['u17','Under 17','Paediatrician','paediatrician',8],['17','17 to 24','Adolescent psychiatrist','adolescent psychiatrist',19],['25','25 and over','Adult psychiatrist','adult psychiatrist',30]];
+/* Children only (21 Nov 2026): the 17 to 24 and 25 and over bands, and the two psychiatrists, were removed at the founder's request. */
+const BANDS=[['u17','Under 17','Paediatrician','paediatrician',8]];
 const money=n=>'$'+n.toLocaleString('en-AU');
 const fees=(c,q)=>q.concern==='behaviour'&&/paediatrician/i.test(c.role)?{fee:CARE.first[0],gap:CARE.first[1],adhd:true}:{fee:c.fee,gap:c.gap,adhd:false};
 /* Learn: the five topic categories agreed on 15 Nov 2026. Short videos and photo guides, not long text.
@@ -411,18 +412,55 @@ function family(){
   <section class="dash fam"><div class="wrap"><div class="app fam-web">${body}${nudge}</div></div></section>`;
 }
 /* Learn is a page of the site, open to anyone. The topic buttons and the sample media are the same ones the Team view counts. */
+/* Pip presents (21 Nov 2026). On Learn, Pip is an AI presenter: an animated face that reads a script aloud, one line at a time,
+   with the line shown as a caption and the whole script as a transcript. Speech uses the browser's own voice when it has one;
+   without it, or with sound off, the captions advance on a timer. Only scripts with no health advice are written here. Every
+   other video shows the waiting lines until a paediatrician writes and approves its script. */
+const SCRIPTS={
+ intro:['Hi, I am Pip. I am an AI presenter, not a doctor.','Learn has short guides on five topics: feeding, sleep, skin, development and being unwell.','A paediatrician approves every health script before I present it.','Under each topic you will find trusted reading from Australian health services.','If something is worrying you, open Talk it through and tell me about it.'],
+ 'unwell-2':['A video visit is an ordinary appointment, on your phone or computer.','Your GP writes the referral first. PaedsMe cannot book a specialist without one.','The clinic sends you a link and a time by message.','Find a quiet spot with good light, and have your child with you.','Keep your notes, photos and videos open, so you can share what you have noticed.','The clinician sets the plan, and a letter goes back to your GP.','If your child is in danger, do not wait for a visit. Call 000.']};
+const WAITING=['This one is not ready yet.','A paediatrician approves every health script before I present it.','Until then, the trusted reading on this page covers the topic.'];
+const PIP_TALK='<svg class="pip-talk" viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="7" width="38" height="36" rx="14" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><path d="M13 18h6l2-4 3 7 2-3h9" fill="none" stroke="var(--sun)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><g class="eyes"><circle cx="18" cy="29" r="2.6" fill="var(--ink)"/><circle cx="30" cy="29" r="2.6" fill="var(--ink)"/></g><path class="smile" d="M19 35q5 4 10 0" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/><ellipse class="mouth" cx="24" cy="36.5" rx="3.6" ry="2.6" fill="var(--ink)"/></svg>';
+const pres={timer:null,token:0};
+const presItem=pid=>{const m=/^(.+)-(\d+)$/.exec(String(pid||'')),t=m&&LEARN.find(x=>x.id===m[1]);return t?t.items[+m[2]]:null;};
+const presIs=pid=>pid==='intro'||!!(presItem(pid)&&presItem(pid)[0]==='v');
+const presLines=pid=>SCRIPTS[pid]||WAITING;
+const presMeta=pid=>pid==='intro'?{title:'How Learn works',who:'the PaedsMe team'}:{title:presItem(pid)[1],who:presItem(pid)[3]};
+const presVoice=()=>{try{if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined')return null;const v=speechSynthesis.getVoices();return v.find(x=>/^en[-_]AU/i.test(x.lang))||v.find(x=>/^en[-_]GB/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||null;}catch(e){return null;}};
+function presStop(){pres.token++;clearTimeout(pres.timer);pres.timer=null;try{if('speechSynthesis' in window)speechSynthesis.cancel();}catch(e){}}
+function presPaint(){const P=state.pres,lines=presLines(state.playing),c=$('pres-cap'),b=$('pres-bar'),w=$('pres'),t=$('pres-toggle');
+  if(c)c.textContent=lines[P.i];if(b)b.style.width=Math.round(100*(P.i+1)/lines.length)+'%';if(w)w.classList.toggle('on',P.on);if(t)t.textContent=P.done?'Play again':P.on?'Pause':'Play';
+  document.querySelectorAll('.pres-script li').forEach((li,i)=>li.classList.toggle('now',i===P.i));}
+function presStep(){
+  presStop();const P=state.pres,pid=state.playing;if(!presIs(pid)||!P.on)return;
+  const lines=presLines(pid),tok=pres.token,line=lines[P.i],ms=Math.max(1800,line.split(/\s+/).length*330+500);
+  const next=()=>{if(pres.token!==tok||state.playing!==pid)return;if(P.i>=lines.length-1){P.on=false;P.done=true;presStop();presPaint();return;}P.i++;presPaint();presStep();};
+  const v=P.sound?presVoice():null;
+  if(v){const u=new SpeechSynthesisUtterance(line.replace(/\b000\b/g,'triple zero'));u.voice=v;u.lang=v.lang;u.rate=.98;u.onend=()=>{if(pres.token!==tok)return;clearTimeout(pres.timer);pres.timer=setTimeout(next,280);};speechSynthesis.speak(u);pres.timer=setTimeout(next,ms*2+1500);}
+  else pres.timer=setTimeout(next,ms);
+}
+function presStage(){
+  const pid=state.playing;if(!presIs(pid))return '';const P=state.pres,lines=presLines(pid),m=presMeta(pid),ready=!!SCRIPTS[pid];
+  return `<div class="pres${P.on?' on':''}" id="pres"><div class="pres-ava">${PIP_TALK}<span class="chip">AI presenter</span></div>
+    <div class="pres-body"><span class="lab">Pip presents</span><b class="pres-title">${esc(m.title)}</b>
+     <p class="pres-cap" id="pres-cap" aria-live="polite">${esc(lines[P.i])}</p>
+     <div class="bar"><i id="pres-bar" style="width:${Math.round(100*(P.i+1)/lines.length)}%"></i></div>
+     <div class="acts"><button type="button" class="primary" id="pres-toggle" data-act="pres-toggle">${P.done?'Play again':P.on?'Pause':'Play'}</button><button type="button" data-act="pres-sound" aria-pressed="${P.sound}">${P.sound?'Sound on':'Sound off'}</button><button type="button" data-act="pres-text" aria-pressed="${P.text}">Transcript</button><button type="button" data-act="pres-close">Close</button></div>
+     ${P.text?`<ol class="pres-script">${lines.map((l,i)=>`<li class="${i===P.i?'now':''}">${esc(l)}</li>`).join('')}</ol>`:''}
+     <p class="foot">${ready?`Script by ${esc(m.who)}. A sample about how things work, with no health advice. It stays a draft until a paediatrician approves it.`:`Script by ${esc(m.who)}, waiting for a paediatrician's approval.`} If your browser has no voice, the captions still play.</p></div></div>`;
+}
 function learnView(){
   const id=state.child,k=state.kids[id];
     const cur=LEARN.some(t=>t.id===state.learnOpen)?state.learnOpen:(baby(id)?'feeding':'nd'),t=LEARN.find(x=>x.id===cur),ti=LEARN.indexOf(t);
     const body=`<div class="cats" role="group" aria-label="Topics">${LEARN.map((c,i)=>`<button type="button" data-act="learn-open" data-id="${c.id}" aria-pressed="${c.id===cur}" style="--s:var(--${TINT[i%5]}-soft)"><span class="ci" aria-hidden="true">${I[c.ico]}</span><span>${c.title}</span></button>`).join('')}</div>
       <section class="panel"><h2>${t.full}</h2><p class="sub">${t.blurb}</p>
        ${t.urgent?'<p class="note"><b>If your child is in danger, call 000.</b> For advice from a nurse in Queensland, call 13 HEALTH (13 43 25 84).</p>':''}
-       <ul class="media">${t.items.map((e,i)=>{const pid=t.id+'-'+i,pl=state.playing===pid,vid=e[0]==='v';return `<li><button type="button" class="mcard" data-act="play" data-ep="${pid}" aria-pressed="${pl}" style="--s:var(--${TINT[(ti+i)%5]}-soft)"><span class="mth">${vid?(pl?I.pause:I.play):I.photos}<span class="dur">${vid?e[2]+' min':e[2]+' photos'}</span>${pl?'<span class="prog"><i></i></span>':''}</span><b>${esc(e[1])}</b><span class="sub">${pl?(vid?'Playing a sample':'Showing sample photos'):esc(e[3])}</span></button></li>`;}).join('')}</ul>
+       ${presStage()}<ul class="media">${t.items.map((e,i)=>{const pid=t.id+'-'+i,pl=state.playing===pid,vid=e[0]==='v';return `<li><button type="button" class="mcard" data-act="play" data-ep="${pid}" aria-pressed="${pl}" style="--s:var(--${TINT[(ti+i)%5]}-soft)"><span class="mth">${vid?(pl?I.pause:I.play):I.photos}<span class="dur">${vid?e[2]+' min':e[2]+' photos'}</span>${pl&&!vid?'<span class="prog"><i></i></span>':''}</span><b>${esc(e[1])}</b><span class="sub">${pl?(vid?'Pip is presenting':'Showing sample photos'):esc(e[3])}</span></button></li>`;}).join('')}</ul>
        <div class="row" style="justify-content:flex-start"><a class="btn primary" href="#talk">Tell Pip about it</a>${t.link?`<a class="btn" href="${t.link[0]}">${t.link[1]}</a>`:''}</div></section>
       ${INFO.some(x=>x.topic===t.id)?`<section class="panel"><div class="row"><h2>Trusted reading</h2><span class="chip quiet">Opens another site</span></div><div class="reading">${INFO.filter(x=>x.topic===t.id).map(infoCard).join('')}</div><p class="foot">General information from Australian public health sources, checked ${INFO_CHECKED}. Not advice about your child.</p></section>`:''}
       <form class="panel" id="ask-form"><div class="field"><label for="ask-input">A question for the next Q&amp;A</label><input type="text" id="ask-input" maxlength="140" placeholder="General questions only"></div><div><button class="primary" type="submit">Send</button></div>${state.asked.length?`<p class="sub">${plural(state.asked.length,'question')} sent.</p>`:''}</form>
       <p class="foot">Short videos and photo guides from the PaedsMe team. General information, not advice about your child. Each one is a draft until a paediatrician signs it off, and the media here are samples.</p>`;
-  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Learn</span><h1>Short videos and photo guides</h1><p class="lead">Five topics to start. General information from the PaedsMe team, never advice about one child.</p></div></div></div>${sparks}</section>
+  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Learn</span><h1>Short videos and photo guides</h1><p class="lead">Five topics to start. General information from the PaedsMe team, never advice about one child.</p><div class="cta-row"><button type="button" class="cta" data-act="play" data-ep="intro" aria-pressed="${state.playing==='intro'}">${I.play} Hear Pip explain this page</button></div></div></div></div>${sparks}</section>
   <section class="dash fam learn"><div class="wrap"><div class="app fam-web">${body}</div></div></section>`;
 }
 
@@ -482,7 +520,7 @@ function home(){
    <div class="grid4">
     <a class="feat" href="#talk" style="--s:var(--lime-soft)"><span class="dot">${I.ask}</span><h3>Talk it through</h3><p>Tell Pip what is worrying you. You leave with a clear note in your own words.</p><span class="more">Talk to Pip ${ARROW}</span></a>
     <a class="feat" href="#find-care" style="--s:var(--accent-soft)"><span class="dot">${I.people}</span><h3>Find care</h3><p>Rapid Access is a proposed model: a paediatrician by video within 48 hours of the referral.</p><span class="more">Find care ${ARROW}</span></a>
-    <a class="feat" href="#adhd-care" style="--s:var(--violet-soft)"><span class="dot">${I.chart}</span><h3>ADHD care</h3><p>Three steps, shared between a specialist and your GP, with the likely costs set out.</p><span class="more">See the steps ${ARROW}</span></a>
+    <a class="feat" href="#adhd-care" style="--s:var(--violet-soft)"><span class="dot">${I.chart}</span><h3>ADHD care</h3><p>Three steps, shared between a paediatrician and your GP, with the likely costs set out.</p><span class="more">See the steps ${ARROW}</span></a>
     <a class="feat" href="#learn" style="--s:var(--sun-soft)"><span class="dot">${I.play}</span><h3>Learn</h3><p>Short videos and photo guides on feeding, sleep, skin, development and being unwell.</p><span class="more">Browse the topics ${ARROW}</span></a>
    </div></div></section>
   <section class="sec alt"><div class="wrap">${secHead('What Pip is','A companion for the worry, not a replacement for the doctor','You notice more than a visit has time for. Pip makes sure none of it is lost.')}
@@ -598,10 +636,10 @@ function getApp(){
    <div class="cta-row center"><a class="btn cta" href="#talk">Talk to Pip on the website</a></div></div></section>`;
 }
 function findCare(){
-  const q=state.q, m=match(q), B=q.age<17?0:q.age<25?1:2, id=reqKey(), k=state.kids[id]||{name:'another child'}, rq=state.req[id];
+  const q=state.q, m=match(q), id=reqKey(), k=state.kids[id]||{name:'another child'}, rq=state.req[id];
   const hints=[];
   if(!q.ref)hints.push('No referral yet. Choose a specialist and we write the request for your GP.');
-  if(q.concern==='behaviour')hints.push(B===0?'For ADHD, a paediatrician does the assessment and your GP does the regular visits after that.':B===1?'From 17 to 24, an adolescent psychiatrist leads ADHD care.':'From 25, an adult psychiatrist leads ADHD care.');
+  if(q.concern==='behaviour')hints.push(q.age<17?'For ADHD, a paediatrician does the assessment and your GP does the regular visits after that.':'PaedsMe ADHD care is for children under 17.');
   else if(q.age>18)hints.push('For this concern, PaedsMe sees children and young people up to 18.');
   if(q.concern==='development'&&q.age<=8)hints.push('Thriving Kids supports children 8 and under with developmental needs, with no diagnosis required. A navigator can help you apply.');
   if(PARKED_ON&&q.concern==='seizures')hints.push('The paediatrician may order an EEG. It can be booked through PaedsMe Diagnostics at the same time.');
@@ -626,7 +664,7 @@ function findCare(){
   <section class="sec" id="results"><div class="wrap duo">
    <form class="filter" id="find-form" aria-label="Refine the search"><h2>Refine</h2>
     <div class="field"><label for="q-who">Who is it for?</label><select id="q-who">${opts([...Object.entries(state.kids).map(([i,c])=>[i,c.name+', '+c.age]),['other','Another child']],id)}</select></div>
-    <div class="two"><div class="field"><label for="q-age">Age</label><input type="number" id="q-age" min="0" max="30" value="${q.age}"></div>
+    <div class="two"><div class="field"><label for="q-age">Age</label><input type="number" id="q-age" min="0" max="18" value="${q.age}"></div>
     <div class="field"><label for="q-region">Where you live</label><select id="q-region">${opts(REGIONS,q.region)}</select></div></div>
     <div class="field"><label for="q-concern">Main concern</label><select id="q-concern">${opts(CONCERNS,q.concern)}</select></div>
     <div class="field"><label for="q-approach">Approach</label><select id="q-approach">${opts([['Any','Any approach'],['Mainstream','Mainstream medicine'],['Holistic','Holistic approach']],q.approach)}</select></div>
@@ -648,7 +686,7 @@ function findCare(){
        <p class="price">${p.adhd?'ADHD assessment visit, about $'+p.fee:'First visit $'+p.fee}<span>about $${p.gap} out of pocket after the rebate</span></p>
        <button class="primary" data-act="book" data-name="${esc(c.name)}"${mine?' disabled':''}>${mine?'Requested':q.ref?'Send my referral':'Ask for a referral'}</button></div></li>`;}).join('')}</ol>`
      :`<div class="empty"><h3>No clinician in the network fits yet</h3><p>Allow video consults or any approach, or a navigator can search outside the network.</p></div>`}
-    ${q.concern==='behaviour'?`<a class="linkcard" href="#adhd-care"><span><b>How ADHD care works, and what it costs</b><span class="sub">Three steps, shared between a specialist and your GP</span></span>${ARROW}</a>`:''}
+    ${q.concern==='behaviour'?`<a class="linkcard" href="#adhd-care"><span><b>How ADHD care works, and what it costs</b><span class="sub">Three steps, shared between a paediatrician and your GP</span></span>${ARROW}</a>`:''}
     <p class="foot">Ranked on clinical fit, location, wait and what matters to your family. Clinicians cannot pay to rank higher. The request is for ${esc(k.name)}.</p>
     <p class="foot disc">PaedsMe checks each clinician's registration and training. It does not provide medical care and does not vouch for clinical outcomes. Draft wording, not yet reviewed by a lawyer.</p>
    </div></div></section>
@@ -797,16 +835,16 @@ function clinic(){
   </div></section>`;
 }
 function careModel(){
-  const m=state.cm,B=BANDS.find(b=>b[0]===m.band),paed=m.band==='u17',lead=B[3],n=m.gp,[f1,g1]=CARE.first,[f2,g2]=CARE.second,[fg,lo,hi]=CARE.gp;
+  const m=state.cm,B=BANDS[0],paed=true,lead=B[3],n=m.gp,[f1,g1]=CARE.first,[f2,g2]=CARE.second,[fg,lo,hi]=CARE.gp;
   const total=f1+f2+n*fg,payLo=g1+g2+n*lo,payHi=g1+g2+n*hi,fd=m.forms,nf=(fd.parent?1:0)+(fd.teacher?1:0),pay=n?money(payLo)+' to '+money(payHi):money(payLo),an=/^a/.test(lead)?'an':'a';
   const step=(i,who,title,text,fee,chip)=>`<li style="--c:var(--${TINT[i]});--s:var(--${TINT[i]}-soft)"><span class="dot">${i+1}</span><span class="who">${who}</span><h3>${title}</h3><p>${text}</p>${chip?'<span class="chip">More specialist visits</span>':''}${fee&&paed?`<span class="fee">${fee}</span>`:''}</li>`;
   return `<section class="band"><div class="wrap band-2"><div class="band-text">
     <span class="eyebrow">ADHD care · proposed model, draft</span>
-    <h1>ADHD care, shared between a specialist and <em>your GP</em></h1>
-    <p class="lead">A specialist does the assessment and sets the plan. Your GP does the regular visits close to home. The specialist reviews twice a year, and sooner by video if something changes.</p>
-    <div class="ctrl"><div class="seg" role="group" aria-label="Age">${BANDS.map(b=>`<button type="button" data-act="cm-band" data-b="${b[0]}" aria-pressed="${b[0]===m.band}">${b[1]}</button>`).join('')}</div>
+    <h1>ADHD care for children, shared with <em>your GP</em></h1>
+    <p class="lead">A paediatrician does the assessment and sets the plan. Your GP does the regular visits close to home. The paediatrician reviews twice a year, and sooner by video if something changes.</p>
+    <div class="ctrl"><span class="chip">For children under 17</span>
      <label class="check"><input type="checkbox" id="cm-complex"${m.complex?' checked':''}><span>Autism, epilepsy or Tourette's as well</span></label></div>
-    <div class="cta-row"><button type="button" class="primary cta" data-act="cm-find">Find ${paed?'a paediatrician':'a psychiatrist'} ${ARROW}</button>${PARKED_ON?'<a class="btn cta" href="#gp-referral">I am a GP</a>':''}</div>
+    <div class="cta-row"><button type="button" class="primary cta" data-act="cm-find">Find a paediatrician ${ARROW}</button>${PARKED_ON?'<a class="btn cta" href="#gp-referral">I am a GP</a>':''}</div>
    </div>
    <div class="band-side"><div class="fcard">
     <span class="lab">${B[1]}</span><p class="leads">${an==='an'?'An':'A'} ${lead} leads the care.</p>
@@ -815,7 +853,7 @@ function careModel(){
     ${paed?`<span class="lab">First year, out of pocket</span><div class="bignum">About ${pay}</div><p class="sub">With ${plural(n,'GP visit')}. ${money(total)} in fees before Medicare. Indicative, not a quote.</p>`
      :`<p class="sub">Fees for care led by ${an} ${lead} are not set yet.</p>`}
    </div></div></div>${sparks}</section>
-  <section class="sec"><div class="wrap">${secHead('How it works','Three steps, the same at every age','Only the specialist changes with age.')}
+  <section class="sec"><div class="wrap">${secHead('How it works','Three steps, shared between a paediatrician and your GP','PaedsMe ADHD care is for children under 17.')}
    <ol class="flow">
     ${step(0,B[2],'Assessment and diagnosis',(paed?'Two visits, the first by video within 48 hours of the referral. You and the teacher fill in a questionnaire first, so it is ready. ':'')+`The ${lead} confirms the diagnosis, checks for anything else going on and writes the plan.`,'About '+money(f1)+', then about '+money(f2))}
     ${step(1,'Your GP','Regular visits','Your GP follows the plan: check-ins, repeat scripts and routine checks.','About '+money(fg)+' a visit')}
@@ -842,7 +880,7 @@ function careModel(){
       <li><div class="txt"><b>Teacher form</b><div class="sub">We email a link to the school</div></div><button type="button" data-act="cm-form" data-f="teacher"${fd.teacher?' disabled':''}>${fd.teacher?'Sent':'Send to teacher'}</button></li></ul></div>
    </div></section>`:''}
   <section class="sec alt"><div class="wrap closer"><h2>Start with a GP referral</h2><p>A GP referral comes first, so Medicare can pay a rebate. Then we match you to ${an} ${lead}.</p>
-   <div class="cta-row center"><button type="button" class="primary cta" data-act="cm-find">Find ${paed?'a paediatrician':'a psychiatrist'} ${ARROW}</button>${PARKED_ON?'<a class="btn cta" href="#gp-referral">I am a GP</a>':''}</div></div></section>`;
+   <div class="cta-row center"><button type="button" class="primary cta" data-act="cm-find">Find a paediatrician ${ARROW}</button>${PARKED_ON?'<a class="btn cta" href="#gp-referral">I am a GP</a>':''}</div></div></section>`;
 }
 /* Team view: which of the five topic categories parents use. Counts only; no child or parent is identified. */
 function teamView(){
@@ -896,7 +934,7 @@ document.addEventListener('click',e=>{
   if(a==='chart'){state.chart[state.child]=b.dataset.c;render();return;}
   if(a==='listen'){listen();return;}
   if(a==='media-clear'){pickMedia(null);const s=$('mslot');if(s)s.innerHTML=mediaSlot(s.dataset.label,s.dataset.accept);return;}
-  if(a==='cm-find'){const B=BANDS.find(x=>x[0]===state.cm.band);Object.assign(state.q,{concern:'behaviour',age:B[4],heard:[]});location.hash='find-care';return;}
+  if(a==='cm-find'){const B=BANDS[0];Object.assign(state.q,{concern:'behaviour',age:B[4],heard:[]});location.hash='find-care';return;}
   if(a==='kid'){state.child=b.dataset.id;state.quick=null;state.prepOpen=false;}
   else if(a==='ftab'){state.ftab=b.dataset.tab;state.quick=null;window.scrollTo(0,0);}
   else if(a==='jdone'){state.jdone[b.dataset.k]=true;state.jOpen=true;toast('Marked as done');}
@@ -916,10 +954,14 @@ document.addEventListener('click',e=>{
   else if(a==='resched'){toast('Reschedule request sent for '+b.dataset.what);return;}
   else if(a==='renew'){state.renew[state.child]=true;toast('Renewal request sent to the GP');}
   else if(a==='hear'||a==='say'){hear(a==='say'?SAY[+b.dataset.i][1]:$('q-said').value);render();toResults();return;}
-  else if(a==='learn-open'){state.learnOpen=b.dataset.id;state.playing=null;bump(b.dataset.id,'v');}
-  else if(a==='play'){const on=state.playing===b.dataset.ep;state.playing=on?null:b.dataset.ep;if(!on)bump(b.dataset.ep.split('-')[0],'p');}
+  else if(a==='learn-open'){presStop();state.learnOpen=b.dataset.id;state.playing=null;bump(b.dataset.id,'v');}
+  else if(a==='play'){const pid=b.dataset.ep,on=state.playing===pid;presStop();state.playing=on?null:pid;if(!on)bump(pid.split('-')[0],'p');
+    if(!on&&presIs(pid)){Object.assign(state.pres,{i:0,on:true,done:false});render();presStep();const w=$('pres');if(w&&w.scrollIntoView)w.scrollIntoView({block:'nearest',behavior:'smooth'});return;}}
+  else if(a==='pres-toggle'){const P=state.pres;if(P.done)Object.assign(P,{i:0,on:true,done:false});else P.on=!P.on;render();if(P.on)presStep();else presStop();return;}
+  else if(a==='pres-sound'){state.pres.sound=!state.pres.sound;render();if(state.pres.on)presStep();return;}
+  else if(a==='pres-text'){state.pres.text=!state.pres.text;}
+  else if(a==='pres-close'){presStop();state.playing=null;}
   else if(a==='learn-chart'){state.chart[state.child]='height';state.ftab='notes';window.scrollTo(0,0);if(view()!=='family'){location.hash='family';return;}}
-  else if(a==='cm-band'){state.cm.band=b.dataset.b;}
   else if(a==='cm-gp'){state.cm.gp=Math.min(12,Math.max(0,state.cm.gp+(+b.dataset.d)));}
   else if(a==='cm-form'){state.cm.forms[b.dataset.f]=true;toast(b.dataset.f==='parent'?'Saved. The paediatrician sees your answers before the visit.':'Link sent to the school');}
   else if(a==='sc-done'){const s=state.shared[+b.dataset.i];s.gpDue=addDays(TODAY,s.every);s.script=addDays(TODAY,s.every);toast('Visit summary sent to '+s.paed);}
@@ -957,7 +999,7 @@ document.addEventListener('change',e=>{
   if(t.id==='q-said'){state.q.said=t.value;return;}
   const num=(v,mx=18)=>Math.min(mx,Math.max(0,parseInt(v,10)||0));
   if(t.id==='q-who'){const q=state.q;if(t.value==='other')q.who='other';else{state.child=t.value;q.who='child';q.age=AGE[t.value];}q.heard=[];render();return;}
-  if(t.closest('#find-form')){const q=state.q,g=i=>document.getElementById(i);q.said=g('q-said').value;q.age=num(g('q-age').value,30);q.region=g('q-region').value;q.concern=g('q-concern').value;q.lang=g('q-lang').value;q.approach=g('q-approach').value;q.culture=g('q-culture').value;q.lived=g('q-lived').checked;q.tele=g('q-tele').checked;q.ref=g('q-ref').checked;if(q.who==='child'&&q.age!==AGE[state.child])q.who='other';q.heard=[];render();}
+  if(t.closest('#find-form')){const q=state.q,g=i=>document.getElementById(i);q.said=g('q-said').value;q.age=num(g('q-age').value);q.region=g('q-region').value;q.concern=g('q-concern').value;q.lang=g('q-lang').value;q.approach=g('q-approach').value;q.culture=g('q-culture').value;q.lived=g('q-lived').checked;q.tele=g('q-tele').checked;q.ref=g('q-ref').checked;if(q.who==='child'&&q.age!==AGE[state.child])q.who='other';q.heard=[];render();}
   if(t.closest('#gp-form')){const g=state.gp;g.age=num(document.getElementById('g-age').value);g.region=document.getElementById('g-region').value;g.concern=document.getElementById('g-concern').value;g.urgency=document.getElementById('g-urgency').value;g.period=document.getElementById('g-period').value;g.tele=document.getElementById('g-tele').checked;g.need=document.getElementById('g-need').value;render();}
 });
 document.addEventListener('submit',e=>{
@@ -1046,7 +1088,7 @@ function context(){
   if(r==='parent')snap={child:{name:k.name,age:k.age},home_logs:{feeds_today:todays(state.feeds[id]).length,naps_today:todays(state.naps[id]).length,rash_entries:state.rashes[id].length},home_region:state.q.region,appointments:kidAppts().map(a=>({what:a.what,date:fmt(a.date),time:a.time,with:a.who,mode:a.mode,prep:a.prep})),gp_referral:{valid_until:fmt(k.refUntil),days_left:days(k.refUntil),renewal_requested:!!state.renew[id]},care_team:k.team,health_journey_due_now:journeyRows(id).due.map(x=>x.what+' ('+x.when+')'),care_program:k.prog,care_plan:k.plan,tests:kidTests(id).map(t=>({name:TINFO[t.type].name,status:tstatus(t)[0],when:twhen(t),doctors_note_to_family:t.s===6&&t.result.mode==='note'?t.result.plain:null,held_for_conversation:t.s===6&&t.result.mode==='discuss'})),doctor:k.doc,notes_for_doctor:{count:state.notes[id].length,sent:!!state.sent[id]}};
   else if(r==='gp')snap={referrals:state.refs.map(x=>({id:x.id,patient:'Child, '+x.age+' y',reason:label(x.concern),urgency:x.urgency,status:STEPS[x.step],booked_with:x.step>=2?x.to:null}))};
   else snap={reviews_due_not_booked:state.clinic.recalls.map(x=>({patient:x.c,group:x.g,due:fmt(x.due),days_overdue:Math.max(0,-days(x.due))})),referrals_expiring:state.clinic.expiring.map(x=>({patient:x.c,group:x.g,expires:fmt(x.until),days_left:days(x.until)})),freed_slots:state.clinic.slots,studies:state.studies.map(x=>({id:x.id,test:x.test,site:x.site,status:FLOW[x.s],days_since_referral:days(TODAY,x.ref),flag:x.s===0?x.flag||null:null}))};
-  if(r==='parent')snap.adhd_shared_care={status:'proposed by the clinical lead, indicative, not a quote',who_leads:'under 17 a paediatrician, 17 to 24 an adolescent psychiatrist, 25 and over an adult psychiatrist',steps:['Paediatrician: assessment over two visits, with a pre-visit questionnaire','GP: regular visits and repeat scripts','Paediatrician: review twice a year, sooner by video if the GP asks'],fees_before_medicare:{paediatrician_first:CARE.first[0],paediatrician_second:CARE.second[0],gp_visit:CARE.gp[0]},out_of_pocket:{paediatrician_first:CARE.first[1],paediatrician_second:CARE.second[1],gp_visit:CARE.gp[1]+' to '+CARE.gp[2]}};
+  if(r==='parent')snap.adhd_shared_care={status:'proposed by the clinical lead, indicative, not a quote',who_leads:'a paediatrician, for children under 17 only',steps:['Paediatrician: assessment over two visits, with a pre-visit questionnaire','GP: regular visits and repeat scripts','Paediatrician: review twice a year, sooner by video if the GP asks'],fees_before_medicare:{paediatrician_first:CARE.first[0],paediatrician_second:CARE.second[0],gp_visit:CARE.gp[0]},out_of_pocket:{paediatrician_first:CARE.first[1],paediatrician_second:CARE.second[1],gp_visit:CARE.gp[1]+' to '+CARE.gp[2]}};
   if(r==='gp')snap.shared_care=state.shared.map(s=>({patient:s.c,group:s.g,plan_by:s.paed,gp_review_due:fmt(s.gpDue),repeat_script_due:fmt(s.script),yearly_review:fmt(s.annual),video_review_asked:!!s.asked}));
   if(r==='staff')snap.adhd_shared_care={questionnaires:state.forms.map(f=>({patient:f.c,first_visit:fmt(f.visit),parent_form_in:f.parent,teacher_form_in:f.teacher})),video_reviews_asked:state.escal.map(e=>({patient:e.c,group:e.g,from:e.from,date:fmt(e.date)})),yearly_reviews:state.shared.map(s=>({patient:s.c,due:fmt(s.annual)}))};
   snap.screen=location.hash.slice(1)||'home';snap.recent_actions=state.log.slice(-5);
@@ -1163,7 +1205,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)op
   renderPip();
 })();
 if(PARKED_ON){const n=document.querySelector('.tabs');if(n)n.insertAdjacentHTML('beforeend','<a href="#family">My family</a><a href="#gp-referral">GP referral</a><a href="#diagnostics">Diagnostics hub</a><a href="#clinic">Clinic tools</a>');}
-window.addEventListener('hashchange',()=>{render();renderPip();window.scrollTo(0,0);});
-function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};render();renderPip();}
+window.addEventListener('hashchange',()=>{presStop();state.pres.on=false;render();renderPip();window.scrollTo(0,0);});
+function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;render();renderPip();}
+try{if('speechSynthesis' in window){speechSynthesis.getVoices();}}catch(e){}
 window.claude?.hot?.snapshot?.(()=>state);
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});

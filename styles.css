@@ -652,7 +652,7 @@ body[data-view="talk"] .pip-fab,body[data-view="talk"] .pip{display:none!importa
 .tnote dl,.tsaved dl{margin:0;display:flex;flex-direction:column;gap:8px}
 .tnote dt,.tsaved dt{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .tnote dd,.tsaved dd{margin:0;overflow-wrap:anywhere}
-.acts{display:flex;flex-wrap:wrap;gap:8px}
+.tnote .acts,.tsaved .acts{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
 .tform{display:flex;gap:10px;padding:14px;border-top:1px solid var(--line);background:var(--surface)}
 .tform input{min-height:50px;font-size:1rem}
 .tform button{flex:none;min-height:50px;padding-inline:22px}
@@ -685,3 +685,32 @@ body[data-view="talk"] .pip-fab,body[data-view="talk"] .pip{display:none!importa
 .reading{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media (max-width:720px){.reading{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){.tinfo:hover{transform:none}}
+
+/* Pip presents (21 Nov 2026): the talking presenter on Learn. A face, a caption, a progress bar and a transcript. */
+.pres{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(16px,2.6vw,28px);align-items:center;padding:clamp(16px,2.4vw,24px);border-radius:24px;background:var(--accent-soft)}
+.pres-ava{display:flex;flex-direction:column;align-items:center;gap:10px}
+.pip-talk{width:clamp(96px,14vw,148px);height:auto;filter:drop-shadow(0 10px 18px rgba(62,74,92,.18))}
+.pip-talk .mouth{opacity:0;transform-box:fill-box;transform-origin:center}
+.pip-talk .eyes{transform-box:fill-box;transform-origin:center;animation:pipblink 4.4s infinite}
+.pres.on .pip-talk{animation:pipbob 1.6s ease-in-out infinite}
+.pres.on .pip-talk .mouth{opacity:1;animation:piptalk .32s ease-in-out infinite alternate}
+.pres.on .pip-talk .smile{opacity:0}
+@keyframes piptalk{from{transform:scaleY(.2)}to{transform:scaleY(1)}}
+@keyframes pipblink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes pipbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.pres-body{display:flex;flex-direction:column;gap:10px;min-width:0}
+.pres-title{font-family:var(--display);font-size:1.25rem;line-height:1.25}
+.pres-cap{font-size:clamp(1.1rem,1.9vw,1.4rem);line-height:1.4;font-weight:600;min-height:2.8em;background:var(--surface);border-radius:16px;padding:14px 18px}
+.pres .bar{height:8px;background:var(--surface)}
+.pres .bar i{transition:width .4s ease}
+.pres .acts button{min-height:44px}
+.pres .acts button[aria-pressed="true"]{border-color:var(--lime);background:var(--lime-soft)}
+.pres-script{margin:0;padding:14px 18px 14px 38px;background:var(--surface);border-radius:16px;display:flex;flex-direction:column;gap:6px;color:var(--muted)}
+.pres-script li.now{color:var(--ink);font-weight:700}
+.band .cta svg{width:18px;height:18px}
+.band button.cta[aria-pressed="true"]{border-color:var(--lime);background:var(--lime-soft)}
+@media (max-width:620px){.pres{grid-template-columns:minmax(0,1fr)}.pres-ava{flex-direction:row;justify-content:flex-start}.pip-talk{width:84px}}
+@media (prefers-reduced-motion:reduce){.pres.on .pip-talk,.pres.on .pip-talk .mouth,.pip-talk .eyes{animation:none}.pres.on .pip-talk .mouth{transform:scaleY(.7)}}
+.pres .acts{flex-direction:row;align-items:center}
+.pres .acts button{flex:0 0 auto;width:auto}
+@media (max-width:620px){.pres .acts button{flex:1 1 40%}}
