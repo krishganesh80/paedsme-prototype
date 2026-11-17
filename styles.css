@@ -921,3 +921,36 @@ button.chosen svg{color:var(--lime-deep)}
 .mpick2 button{min-height:44px;padding:8px 14px;font-size:.88rem}
 .mpick2 button[aria-pressed="true"]{border-color:var(--lime);background:var(--lime-soft)}
 .trkfoot{margin-top:24px}
+
+/* How Pip works (2 Dec 2026): numbered steps above the conversation and on Home. */
+.how{margin-bottom:28px}
+.how h2{font-size:1.25rem}
+.hsteps{--g:clamp(18px,3vw,40px);list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--g);width:100%}
+.hsteps li{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:26px 16px 22px;border-radius:24px;background:var(--bg);min-width:0}
+.hsteps b{font-family:var(--display);font-size:1.12rem;line-height:1.25}
+.hsteps .sub{font-size:.92rem;line-height:1.45;max-width:24ch}
+.hico{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:var(--s);color:var(--ink);margin-bottom:4px}
+.hico svg{width:38px;height:38px}
+.hico .pip-img{width:100%;height:100%;box-shadow:0 0 0 3px var(--surface),0 0 0 6px var(--accent)}
+.hnum{position:absolute;top:12px;left:12px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:var(--surface);font-family:var(--display);font-weight:700;font-size:.92rem}
+.hsteps li+li::before{content:"";position:absolute;left:calc(var(--g) / -2 - 7px);top:50%;width:11px;height:11px;border-top:3px solid var(--muted);border-right:3px solid var(--muted);transform:translateY(-50%) rotate(45deg);opacity:.7}
+.meet-art .hsteps li{background:rgba(255,255,255,.92)}
+.meet-art .hsteps{--g:16px}
+.meet-art .hsteps li{padding:22px 10px 18px}
+.meet-art .hico{width:68px;height:68px}
+.meet-art .hsteps b{font-size:1rem}
+.meet-art .hsteps .sub{font-size:.84rem}
+@media (max-width:1100px) and (min-width:901px){.meet-art .hsteps .sub{display:none}}
+@media (max-width:620px){
+  .hsteps,.meet-art .hsteps{--g:10px}
+  .hsteps li,.meet-art .hsteps li{padding:16px 6px 12px;gap:6px;border-radius:18px}
+  .hico,.meet-art .hico{width:52px;height:52px}
+  .hico svg{width:26px;height:26px}
+  .hsteps b,.meet-art .hsteps b{font-size:.84rem}
+  .hsteps .sub{display:none}
+  .hnum{top:6px;left:6px;width:22px;height:22px;font-size:.74rem}
+  .hsteps li+li::before{width:7px;height:7px;border-width:2px;left:calc(var(--g) / -2 - 4px)}
+  .how{margin-bottom:20px}
+}
+.meet-art .hnum{top:8px;left:8px;width:26px;height:26px;font-size:.82rem}
+.meet-art .hsteps li{padding-top:30px}

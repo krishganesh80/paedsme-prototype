@@ -542,7 +542,7 @@ function home(){
     <div class="meet-text"><span class="meet-lab">${I.ask} Pip</span><h2>Tell Pip. Pip writes it down.</h2><p>Say what you’ve noticed, any time. You leave with a clear note to show your doctor.</p>
      <a class="more big" href="#talk">Talk to Pip ${ARROW}</a>
      <div class="who">${PIP_SVG}<div><b>Pip</b><span class="sub">AI helper, not a doctor</span></div></div></div>
-    <div class="meet-art">${flowDiagram()}</div></div></div></section>
+    <div class="meet-art">${howSteps()}</div></div></div></section>
   <section class="sec"><div class="wrap closer"><span class="kick">The app</span><h2>Want Pip on your phone?</h2><p>The app isn’t built yet. Tell us you want it.</p>
    <div class="cta-row center"><a class="btn primary cta" href="#get-app" data-cta="home">Get the app ${ARROW}</a></div></div></section>`;
 }
@@ -591,7 +591,12 @@ function trackChart(id){
   const mx=Math.max(1,...vals.map(v=>v||0)),H=96,bw=28,gap=12;
   return `<div class="tchart"><span class="lab">${d[1]} this week${d[4]==='num'?', in '+d[2]:''}</span><svg viewBox="0 0 280 132" role="img" aria-label="${d[1]} for seven days: ${vals.map((v,i)=>WEEK[i]+' '+(v==null?'not logged':v)).join(', ')}">${vals.map((v,i)=>{const h=v?Math.max(4,Math.round(H*v/mx)):4,x=i*(bw+gap);return `<rect x="${x}" y="${H-h+16}" width="${bw}" height="${h}" rx="8" fill="var(--${i===6?'lime':'accent'})"${v?'':' opacity=".25"'}/><text x="${x+bw/2}" y="${H-h+11}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${v?v:''}</text><text x="${x+bw/2}" y="${H+32}" text-anchor="middle" font-size="11" fill="var(--muted)">${WEEK[i]}</text>`;}).join('')}</svg></div>`;
 }
-const flowDiagram=()=>`<div class="flowd" role="img" aria-label="You tell Pip, Pip writes it down, you show your doctor"><span class="node main">${PIP_SVG}</span><i></i><span class="node">${I.folder}</span><i></i><span class="node">${I.people}</span></div><div class="flowl"><span>You tell Pip</span><span>Pip writes it down</span><span>You show your doctor</span></div>`;
+/* How Pip works (2 Dec 2026): three numbered steps, each with one picture and one short line. It sits above the conversation
+   and on Home, never inside the chat. */
+const HOW=[[PIP_SVG,'You tell Pip','Type what you’ve noticed, in your own words.','accent'],
+ [ICO('<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h5"/>'),'Pip writes it down','A clear note, kept as you said it.','sun'],
+ [ICO('<circle cx="12" cy="7" r="3.2"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/><path d="M12 15.2v3.6M10.2 17h3.6"/>'),'You show your doctor','Copy it, or show it at the visit.','lime']];
+const howSteps=()=>`<ol class="hsteps" aria-label="How Pip works">${HOW.map((h,i)=>`<li style="--s:var(--${h[3]}-soft)"><span class="hnum" aria-hidden="true">${i+1}</span><span class="hico" aria-hidden="true">${h[0]}</span><b>${h[1]}</b><span class="sub">${h[2]}</span></li>`).join('')}</ol>`;
 function trackLog(id,val){const T=state.track,d=TRK.find(x=>x[0]===id);if(!d)return;
   if(d[4]==='tap')T.today[id]=Math.max(0,T.today[id]+(val===-1?-1:1));else T.today[id]=val;
   T.own=true;toast(val===-1?'Removed':'Logged');}
@@ -629,15 +634,15 @@ function talkSave(i){const T=state.talk,m=T.log[i];if(!m||m.t!=='note'||m.status
   talkSay('Saved. Who would you like to take it to?',{next:id});}
 function talkView(){
   const T=state.talk;
-  if(!T.log.length)talkSay('Hi, I’m Pip. What’s worrying you about your child? Tell me in your own words. I’m not a doctor, so I can’t tell you what it is. I can help you get it down clearly for someone who can.',{chips:TALK_START,flow:true});
+  if(!T.log.length)talkSay('Hi, I’m Pip. What’s worrying you about your child? Tell me in your own words. I’m not a doctor, so I can’t tell you what it is. I can help you get it down clearly for someone who can.',{chips:TALK_START});
   const lines=d=>Object.keys(TALK_LAB).filter(k=>d[k]).map(k=>`<div><dt>${TALK_LAB[k]}</dt><dd>${esc(d[k])}</dd></div>`).join('');
   const log=T.log.map((m,i)=>m.t==='note'
     ?`<div class="tnote"><span class="lab">Your note</span><dl>${lines(m.d)}</dl>${m.status==='pending'?`<div class="acts"><button type="button" class="primary" data-act="talk-save" data-i="${i}">Save this note</button><button type="button" data-act="talk-new">Start again</button></div>`:'<span class="chip good">Saved</span>'}</div>`
-    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.flow?flowDiagram():''}${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My doctor</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-urgent" data-id="${m.next}">An urgent video call</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
+    :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My doctor</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-urgent" data-id="${m.next}">An urgent video call</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
   const saved=T.saved.length?`<ul class="tsaved">${T.saved.map(n=>`<li><details><summary><b>${esc(n.d.what.length>70?n.d.what.slice(0,67)+'...':n.d.what)}</b><span class="sub">${fmt(n.date)}${n.d.age?' · '+esc(n.d.age):''}</span></summary><dl>${lines(n.d)}</dl></details><div class="acts"><button type="button" data-act="talk-gp" data-id="${n.id}">Copy for my doctor</button><button type="button" data-act="talk-find" data-id="${n.id}">Find care with this</button></div></li>`).join('')}</ul>`
     :'<p class="sub">Your saved notes will show here.</p>';
   return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Pip · AI helper</span><h1>Tell Pip what is worrying you</h1><p class="lead">Pip listens and writes it down for you. Pip isn’t a doctor.</p></div></div></div>${sparks}</section>
-  <section class="dash fam"><div class="wrap"><div class="talk">
+  <section class="dash fam"><div class="wrap"><section class="panel how"><h2>How Pip works</h2>${howSteps()}</section><div class="talk">
     <section class="panel chat" aria-label="Conversation with Pip"><div class="chat-head">${PIP_SVG}<div><b>Pip</b><span class="sub">Here any time</span></div><button type="button" data-act="talk-new">New conversation</button></div>
      <div class="tlog" id="talk-log" role="log" aria-live="polite">${log}</div>
      <form class="tform" id="talk-form"><label class="sr" for="talk-input">Your message to Pip</label><input type="text" id="talk-input" maxlength="400" autocomplete="off" placeholder="Type it the way you would say it"><button class="primary" type="submit">Send</button></form></section>
