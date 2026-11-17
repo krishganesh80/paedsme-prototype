@@ -954,3 +954,24 @@ button.chosen svg{color:var(--lime-deep)}
 }
 .meet-art .hnum{top:8px;left:8px;width:26px;height:26px;font-size:.82rem}
 .meet-art .hsteps li{padding-top:30px}
+
+/* Your notes (3 Dec 2026): its own colour, so it reads as a separate place where saved notes are kept. */
+.dash .panel.notesbox{background:linear-gradient(160deg,var(--violet-soft) 0%,color-mix(in srgb,var(--violet-soft) 55%,var(--surface)) 100%);border:2px solid color-mix(in srgb,var(--violet) 28%,transparent);box-shadow:none;gap:18px}
+.nb-head{display:flex;align-items:center;gap:14px}
+.nb-head>div{display:flex;flex-direction:column;flex:1;min-width:0}
+.nb-head h2{font-size:1.3rem}
+.nb-ico{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;flex:none;background:var(--violet);color:#fff}
+.nb-ico svg{width:24px;height:24px}
+.notesbox .chip{background:var(--surface);color:var(--violet);font-weight:800}
+.nb-empty{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:22px 16px;border:2px dashed color-mix(in srgb,var(--violet) 40%,transparent);border-radius:20px;color:var(--ink)}
+.nb-empty span{color:var(--violet)}
+.nb-empty svg{width:34px;height:34px}
+.nb-empty p{max-width:26ch}
+.notesbox .tsaved li{background:var(--surface);border-radius:18px;padding:14px;border-bottom:0}
+.nb-acct{display:flex;flex-direction:column;gap:12px;background:var(--surface);border-radius:20px;padding:18px}
+.nb-acct>b{font-family:var(--display);font-size:1.08rem;display:flex;align-items:center;gap:8px}
+.nb-acct.done>b svg{color:var(--lime-deep)}
+.two2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:1100px){.two2{grid-template-columns:minmax(0,1fr)}}
+.nb-acct button.primary{background:var(--violet);border-color:var(--violet);color:#fff;min-height:46px}
+.nb-acct input[type=text]{min-height:48px}

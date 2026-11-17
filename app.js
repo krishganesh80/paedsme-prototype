@@ -105,6 +105,8 @@ state.wait={joined:false,platform:null,visits:1240,taps:{header:96,home:71,talk:
 /* Urgent video call: the request a parent is filling in. Counts only; nothing typed here is sent anywhere. */
 /* Folded sections the visitor has opened. */
 state.fold={};
+/* Note accounts: whether this visitor has added their details, and how many have. Counts only; nothing typed is kept. */
+state.acct={on:false,count:112};
 state.urgent={ok:false,age:'',what:'',note:false,sent:false,count:14};
 /* Pip presents: which line is showing, whether it is playing, and the viewer's sound and transcript choices. */
 state.pres={i:0,on:false,sound:true,text:false,done:false};
@@ -596,6 +598,7 @@ function trackChart(id){
 const HOW=[[PIP_SVG,'You tell Pip','Type what you’ve noticed, in your own words.','accent'],
  [ICO('<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h5"/>'),'Pip writes it down','A clear note, kept as you said it.','sun'],
  [ICO('<circle cx="12" cy="7" r="3.2"/><path d="M5 21c0-4 3-7 7-7s7 3 7 7"/><path d="M12 15.2v3.6M10.2 17h3.6"/>'),'You show your doctor','Copy it, or show it at the visit.','lime']];
+const NOTE_ICO=ICO('<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h5"/>');
 const howSteps=()=>`<ol class="hsteps" aria-label="How Pip works">${HOW.map((h,i)=>`<li style="--s:var(--${h[3]}-soft)"><span class="hnum" aria-hidden="true">${i+1}</span><span class="hico" aria-hidden="true">${h[0]}</span><b>${h[1]}</b><span class="sub">${h[2]}</span></li>`).join('')}</ol>`;
 function trackLog(id,val){const T=state.track,d=TRK.find(x=>x[0]===id);if(!d)return;
   if(d[4]==='tap')T.today[id]=Math.max(0,T.today[id]+(val===-1?-1:1));else T.today[id]=val;
@@ -640,14 +643,22 @@ function talkView(){
     ?`<div class="tnote"><span class="lab">Your note</span><dl>${lines(m.d)}</dl>${m.status==='pending'?`<div class="acts"><button type="button" class="primary" data-act="talk-save" data-i="${i}">Save this note</button><button type="button" data-act="talk-new">Start again</button></div>`:'<span class="chip good">Saved</span>'}</div>`
     :`<div class="tmsg ${m.t==='pip'?'bot':m.t}">${m.n?`<span class="tq">Question ${m.n} of ${TALK_Q.length}</span>`:''}${esc(m.text)}</div>${m.info?infoCards(m.info):''}${m.chips&&m.chips.length?`<div class="tchips">${m.chips.map(c=>`<button type="button" data-act="talk-chip">${esc(c)}</button>`).join('')}</div>`:''}${m.next?`<div class="tchips next"><button type="button" data-act="talk-gp" data-id="${m.next}">My doctor</button><button type="button" data-act="talk-find" data-id="${m.next}">A paediatrician</button><button type="button" data-act="talk-nurse">A nurse, now</button><button type="button" data-act="talk-urgent" data-id="${m.next}">An urgent video call</button><button type="button" data-act="talk-info" data-id="${m.next}">Read about this</button><button type="button" data-act="talk-learn" data-id="${m.next}">Watch a short guide</button></div>`:''}`).join('');
   const saved=T.saved.length?`<ul class="tsaved">${T.saved.map(n=>`<li><details><summary><b>${esc(n.d.what.length>70?n.d.what.slice(0,67)+'...':n.d.what)}</b><span class="sub">${fmt(n.date)}${n.d.age?' · '+esc(n.d.age):''}</span></summary><dl>${lines(n.d)}</dl></details><div class="acts"><button type="button" data-act="talk-gp" data-id="${n.id}">Copy for my doctor</button><button type="button" data-act="talk-find" data-id="${n.id}">Find care with this</button></div></li>`).join('')}</ul>`
-    :'<p class="sub">Your saved notes will show here.</p>';
+    :`<div class="nb-empty"><span aria-hidden="true">${NOTE_ICO}</span><p>No notes yet. Save one with Pip and it lands here.</p></div>`;
   return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">Pip · AI helper</span><h1>Tell Pip what is worrying you</h1><p class="lead">Pip listens and writes it down for you. Pip isn’t a doctor.</p></div></div></div>${sparks}</section>
   <section class="dash fam"><div class="wrap"><section class="panel how"><h2>How Pip works</h2>${howSteps()}</section><div class="talk">
     <section class="panel chat" aria-label="Conversation with Pip"><div class="chat-head">${PIP_SVG}<div><b>Pip</b><span class="sub">Here any time</span></div><button type="button" data-act="talk-new">New conversation</button></div>
      <div class="tlog" id="talk-log" role="log" aria-live="polite">${log}</div>
      <form class="tform" id="talk-form"><label class="sr" for="talk-input">Your message to Pip</label><input type="text" id="talk-input" maxlength="400" autocomplete="off" placeholder="Type it the way you would say it"><button class="primary" type="submit">Send</button></form></section>
     <div class="fcol">
-     <section class="panel"><div class="row"><h2>Your notes</h2><span class="chip quiet">${T.saved.length} saved</span></div>${saved}<p class="foot">Stays on this device.</p></section>
+     <section class="panel notesbox" id="notes"><div class="nb-head"><span class="nb-ico" aria-hidden="true">${NOTE_ICO}</span><div><h2>Your notes</h2><span class="sub">Notes you save with Pip are kept here.</span></div><span class="chip">${T.saved.length} saved</span></div>
+      ${saved}
+      ${state.acct.on?`<div class="nb-acct done"><b>${TICK} Your notes are linked to your email</b><span class="sub">Sign in with it on any device to see them.</span><p class="foot">Demo only. Nothing you typed was saved or sent.</p><div><button type="button" data-act="acct-reset">Use a different email</button></div></div>`
+       :`<form class="nb-acct" id="acct-form" novalidate><b>Get back to your notes anywhere</b><span class="sub">Right now they stay on this device. Add your details to keep them.</span>
+        <div class="two2"><div class="field"><label for="ac-name">Your first name</label><input type="text" id="ac-name" maxlength="40" autocomplete="given-name"></div><div class="field"><label for="ac-email">Email</label><input type="email" id="ac-email" maxlength="120" autocomplete="email" placeholder="you@example.com"></div></div>
+        <div class="two2"><div class="field"><label for="ac-child">Child’s first name</label><input type="text" id="ac-child" maxlength="40"></div><div class="field"><label for="ac-age">Child’s age</label><select id="ac-age">${opts([['','Choose'],...TELE_AGES],'')}</select></div></div>
+        <label class="check"><input type="checkbox" id="ac-ok"><span>I agree PaedsMe can keep my notes and these details.</span></label>
+        <div><button class="primary" type="submit">Save my notes</button></div>
+        <p class="foot">Demo only. Nothing you type is saved or sent.</p></form>`}</section>
      <section class="panel urgent"><h2>If it is urgent</h2><ul class="plain"><li><b>000</b> if your child is in danger</li><li><b>1800 022 222</b> healthdirect, a nurse at any hour</li><li><b>13 43 25 84</b> 13 HEALTH, in Queensland</li></ul><a class="btn primary" href="#urgent">Speak to a paediatrician by video</a><p class="foot">A fee applies for the video call.</p></section>
     </div></div></div></section>`;
 }
@@ -985,6 +996,7 @@ function teamView(){
     <p class="foot">Counts only. What a parent types on the request is not kept. The hours, the wait and the fee need the clinical lead's decision.</p></section>
    <section class="panel"><div class="row"><h2>Demand for the app</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <div class="kpis flat">${kpi('Site visits',w.visits.toLocaleString('en-AU'),'synthetic')}${kpi('Get the app taps',taps,Math.round(100*taps/w.visits)+'% of visits')}${kpi('Joined the list',w.joins,Math.round(100*w.joins/taps)+'% of taps')}${kpi('Most wanted',use[0],use[1]+' picks')}</div>
+    <p class="sub">Note accounts: ${state.acct.count} parents added an email to keep their notes.</p>
     <p class="sub">Taps by place: header ${w.taps.header}, home page ${w.taps.home}, Pip ${w.taps.talk}. Phones: iPhone ${w.plat.iPhone}, Android ${w.plat.Android}.</p>
     <p class="foot">The website comes first. The app is built only if these numbers say families want it. The pass mark is not set yet, and no email is kept in this prototype.</p></section>
    <div class="cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
@@ -1077,6 +1089,7 @@ document.addEventListener('click',e=>{
   else if(a==='talk-info'){const n=state.talk.saved.find(x=>x.id===b.dataset.id),hits=n?infoFor(n.d.what):[];state.talk.log.forEach(m=>{delete m.next;});
     if(hits.length)talkSay('Here is general information from a trusted Australian source. It is not about your child, and your GP or a nurse can tell you more.',{info:hits.map(x=>x.id)});else talkSay('I do not have a trusted page on that yet. A nurse can talk it through with you on 1800 022 222.');}
   else if(a==='talk-learn'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);state.learnOpen=talkTopic(n?n.d.what:'');state.playing=null;location.hash='learn';return;}
+  else if(a==='acct-reset'){state.acct.on=false;}
   else if(a==='wait-reset'){state.wait.joined=false;}
   else if(a==='survey'){toast('The parent survey is not open yet. The link will sit here.');return;}
   else if(a==='book'){if(reqNames(state.req[reqKey()]).includes(b.dataset.name))unbook(b.dataset.name);else book(b.dataset.name);}
@@ -1138,6 +1151,8 @@ document.addEventListener('submit',e=>{
     U.sent=true;U.count++;toast('Request sent. This is a demo, so nothing was charged.');window.scrollTo(0,0);render();return;}
   if(e.target.dataset&&e.target.dataset.trk){const id=e.target.dataset.trk,d=TRK.find(x=>x[0]===id),v=parseFloat($('trk-'+id).value);if(!(v>0)||v>d[6]){toast('Type a number first');return;}trackLog(id,Math.round(v*10)/10);render();return;}
   if(e.target.id==='talk-form'){const v=$('talk-input').value;if(!v.trim()){toast('Type a few words first');return;}talkSend(v);render.focusTalk=true;render();return;}
+  if(e.target.id==='acct-form'){const g=i=>$(i).value.trim();if(!g('ac-name')){toast('Add your first name');return;}if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g('ac-email'))){toast('Type your email first');return;}if(!g('ac-child')||!$('ac-age').value){toast('Add your child’s first name and age');return;}if(!$('ac-ok').checked){toast('Tick the box to agree first');return;}
+    state.acct.on=true;state.acct.count++;toast('Done. Your notes are linked to your email.');render();return;}
   if(e.target.id==='wait-form'){const em=$('wait-email').value.trim(),w=state.wait;if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Type your email first');return;}
     w.joined=true;w.joins++;w.platform=(document.querySelector('input[name="wplat"]:checked')||{}).value||null;if(w.platform)w.plat[w.platform]++;
     document.querySelectorAll('input[name="wuse"]:checked').forEach(x=>{if(w.uses[x.value]!=null)w.uses[x.value]++;});toast('Thanks. You are on the list.');render();return;}
@@ -1328,7 +1343,7 @@ document.addEventListener('toggle',e=>{const t=e.target;if(t.id==='f-more')state
 /* On a tablet or phone the header tucks away while scrolling down and returns on the way up. */
 let lastY=0;window.addEventListener('scroll',()=>{const y=window.scrollY,t=document.querySelector('.top');if(!t)return;if(window.innerWidth<=940&&y>lastY+6&&y>160)t.classList.add('tuck');else if(y<lastY-6||y<=160)t.classList.remove('tuck');lastY=y;},{passive:true});
 window.addEventListener('hashchange',()=>{const tp=document.querySelector('.top');if(tp)tp.classList.remove('tuck');presStop();state.pres.on=false;render();renderPip();window.scrollTo(0,0);});
-function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked&&saved.urgent)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;render();renderPip();}
+function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked&&saved.urgent&&saved.acct)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;render();renderPip();}
 try{if('speechSynthesis' in window){speechSynthesis.getVoices();}}catch(e){}
 try{loadHeroes();}catch(e){}
 window.claude?.hot?.snapshot?.(()=>state);
