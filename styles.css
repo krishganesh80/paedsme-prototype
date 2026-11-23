@@ -1004,3 +1004,30 @@ button.chosen svg{color:var(--lime-deep)}
 @media (max-width:760px){.golinks{grid-template-columns:repeat(2,minmax(0,1fr))}.golinks a:last-child{grid-column:1/-1}}
 @media (prefers-reduced-motion:reduce){.golinks a:hover{transform:none}}
 .tlbox{gap:18px}
+
+/* Kept on this device (5 Dec 2026). */
+.keep{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid var(--line);padding-top:18px}
+.keep .txt{display:flex;flex-direction:column;gap:2px;flex:1 1 260px;min-width:0}
+.keep b{font-family:var(--display)}
+.keep button{min-height:44px}
+button.danger{background:var(--orange);border-color:var(--orange);color:#fff}
+
+/* The agent's plan (6 Dec 2026). */
+.agent-head{display:flex;align-items:center;gap:14px}
+.agent-head .pip-img{width:52px;height:52px;box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent)}
+.agent-head div{display:flex;flex-direction:column}
+.agent-head b{font-family:var(--display);font-size:1.3rem}
+.psteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.psteps li{display:flex;gap:14px;align-items:flex-start;padding:16px;border-radius:20px;background:var(--bg);border:2px solid transparent}
+.psteps li.done{border-color:var(--lime);background:color-mix(in srgb,var(--lime-soft) 55%,var(--surface))}
+.psteps li.off{opacity:.55}
+.psteps input{width:24px;height:24px;margin-top:2px;accent-color:var(--lime-deep);flex:none}
+.pmark{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--lime);color:#263238}
+.psteps li.off .pmark{background:var(--line)}
+.psteps .txt{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;align-items:flex-start}
+.psteps b{font-family:var(--display);font-size:1.08rem}
+.psteps .sub{overflow-wrap:anywhere}
+.psteps a.btn{min-height:44px}
+.psteps .tinfos{align-self:stretch}
+.onecard.plan .acts{flex-direction:row;flex-wrap:wrap;align-items:center}
+@media (max-width:620px){.onecard.plan .acts>*{flex:1 1 100%}}

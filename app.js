@@ -108,7 +108,7 @@ state.fold={};
 /* Note accounts: whether this visitor has added their details, and how many have. Counts only; nothing typed is kept. */
 state.acct={on:false,count:112};
 /* The one box: what was last said, the answer showing, and how often each route is taken. Counts only. */
-state.one={said:'',res:null,listening:false,counts:{worry:214,track:167,care:98,info:131,urgent:9}};
+state.one={said:'',res:null,listening:false,counts:{worry:214,track:167,care:98,info:131,urgent:9,plan:86}};
 state.urgent={ok:false,age:'',what:'',note:false,sent:false,count:14};
 /* Pip presents: which line is showing, whether it is playing, and the viewer's sound and transcript choices. */
 state.pres={i:0,on:false,sound:true,text:false,done:false};
@@ -187,7 +187,7 @@ function oneListen(){
   rec=new SR();rec.lang='en-AU';rec.interimResults=true;rec.continuous=false;let got='';
   rec.onresult=e=>{got=[...e.results].map(r=>r[0].transcript).join(' ');const box=document.getElementById('one-said');if(box)box.value=got;};
   rec.onerror=e=>{toast(e.error==='not-allowed'||e.error==='service-not-allowed'?'The microphone is blocked. Type it instead.':'Could not hear that. Try again, or type it.');};
-  rec.onend=()=>{rec=null;O.listening=false;if(got.trim())oneRoute(got);render();oneShow();};
+  rec.onend=()=>{rec=null;O.listening=false;if(got.trim())oneGo(got);else render();};
   try{rec.start();O.listening=true;render();}catch(e){rec=null;O.listening=false;toast('Voice did not start. Type it instead.');}
 }
 function oneShow(){const r=document.getElementById('one-res');if(r&&r.scrollIntoView)r.scrollIntoView({block:'center',behavior:'smooth'});}
@@ -538,12 +538,12 @@ function reqCard(id){
    question gets a trusted page. Everything saved lands in one timeline that can be shared with a doctor.
    The box sorts by what the parent asked for and never by how serious it sounds; only the fixed emergency words bring up 000.
    Every answer offers the other routes, because keyword sorting will sometimes guess wrong. */
-const ONE_EX=[['A worry','She keeps waking at night and I don’t know why'],['Log it','Fed at 3pm, one wet nappy'],['Find a doctor','I need a paediatrician in Brisbane for my 7 year old'],['Ask a question','How do I start solids?']];
+const ONE_EX=[['All at once','She keeps waking at night and I don’t know why. Fed twice today and I need a paediatrician in Brisbane.'],['A worry','She keeps waking at night and I don’t know why'],['Log it','Fed at 3pm, one wet nappy'],['Find a doctor','I need a paediatrician in Brisbane for my 7 year old'],['Ask a question','How do I start solids?']];
 const ONE_ALT=[['worry','Tell Pip about it'],['track','Log it'],['care','Find a doctor'],['info','Look it up']];
 const CARE_RX=/\b(need|find|want|looking for|book|get|see)\b[^?]*\b(paediatrician|pediatrician|doctor|specialist|referral|appointment)\b/i;
 function oneTrack(text){
-  const t=' '+String(text).toLowerCase().replace(/\b[a-z]+\b/g,w=>NUMW.includes(w)?NUMW.indexOf(w):w)+' ',out=[],num=rx=>{const m=t.match(rx);return m?parseFloat(m[1]):null;};
-  const fd=num(/(\d+)\s*(?:feeds?|bottles?)\b/);if(fd||/\b(fed|breastfed|had a (feed|bottle))\b/.test(t))out.push(['feeds',Math.min(12,fd||1)]);
+  const t=' '+String(text).toLowerCase().replace(/\btwice\b/g,'2 times').replace(/\bonce\b/g,'1 times').replace(/\b[a-z]+\b/g,w=>NUMW.includes(w)?NUMW.indexOf(w):w)+' ',out=[],num=rx=>{const m=t.match(rx);return m?parseFloat(m[1]):null;};
+  const fd=num(/(\d+)\s*(?:feeds?|bottles?)\b/)||num(/\b(?:fed|feeds?)\s+(\d+)\s*times\b/);if(fd||/\b(fed|breastfed|had a (feed|bottle))\b/.test(t))out.push(['feeds',Math.min(12,fd||1)]);
   const np=num(/(\d+)\s*(?:wet\s*)?napp(?:y|ies)\b/);if(np||/\bwet napp(y|ies)\b/.test(t))out.push(['nappies',Math.min(12,np||1)]);
   const sl=num(/slept\s*(?:for\s*)?(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)\b/)||num(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)\s*(?:of\s*)?sleep\b/);if(sl&&sl<=16)out.push(['sleep',sl]);
   const wt=num(/(\d+(?:\.\d+)?)\s*(?:kg|kilos?|kilograms?)\b/);if(wt&&wt<=80)out.push(['weight',wt]);
@@ -551,10 +551,63 @@ function oneTrack(text){
   const md=t.match(/\bmood\b[^.]*?\b(very upset|upset|unsettled|calm|happy)\b/);if(md)out.push(['mood',MOODS.findIndex(x=>x.toLowerCase()===md[1])]);
   return out;
 }
+/* The agent (6 Dec 2026). One message can hold several jobs. Pip reads all of it, proposes a plan across the features, asks
+   once, then does the jobs and reports back. A parent can untick any step first. Nothing is changed before "Do it".
+   On this site the plan is made by rules. Where a live model is available (pip.live), the model makes the plan by calling the
+   plan tools below; its free text is never shown, only the steps it asked for, so it cannot say anything about a child's health.
+   The safety rules are unchanged: emergency words stop everything and show 000, and a "should I" question is never a booking. */
+const oneClauses=t=>String(t).replace(/([.!?;])\s+/g,'$1\n').replace(/\s+and\s+(?=(?:i (?:need|want|am looking)|we (?:need|want)|fed|slept|\d+)\b)/gi,'\n').split('\n').map(x=>x.trim()).filter(Boolean);
+const clauseKind=c=>{const logs=oneTrack(c);return ASKS.test(c)?'info':logs.length&&!isQ(c)?'track':CARE_RX.test(c)&&!/^\s*(should|do i|does)\b/i.test(c)?'care':isQ(c)?'info':c.split(/\s+/).length>=3?'worry':null;};
+const logWords=logs=>logs.map(([id,v])=>{const d=TRK.find(x=>x[0]===id);return id==='mood'?'mood: '+MOODS[v].toLowerCase():d[4]==='num'?(id==='sleep'?v+' hours of sleep':v+' kg'):plural(v,d[5]);}).join(', ');
+function agentPlan(text){
+  const worry=[],logs=[],ids=[];let care=false;
+  oneClauses(text).forEach(c=>{const k=clauseKind(c);if(k==='worry')worry.push(c);else if(k==='track')oneTrack(c).forEach(([id,v])=>{const d=TRK.find(x=>x[0]===id),h=logs.find(x=>x[0]===id);if(h&&d[4]==='tap')h[1]+=v;else if(h)h[1]=v;else logs.push([id,v]);});else if(k==='care')care=true;else if(k==='info')infoFor(c).forEach(x=>{if(!ids.includes(x.id)&&ids.length<2)ids.push(x.id);});});
+  const steps=[];
+  if(worry.length)steps.push({kind:'worry',on:true,label:'Start a note with Pip',detail:'“'+worry.join(' ')+'”',text:worry.join(' ')});
+  if(logs.length)steps.push({kind:'track',on:true,label:'Log '+logWords(logs),detail:'Added to today’s counts',logs});
+  if(care)steps.push({kind:'care',on:true,label:'Find your top three doctors',detail:'Matched to your child and where you live'});
+  if(ids.length)steps.push({kind:'info',on:true,label:'Find something trusted to read',detail:ids.map(id=>INFO.find(x=>x.id===id).title).join(', '),ids});
+  return steps;
+}
+const applyLogs=logs=>{logs.forEach(([id,v])=>{const d=TRK.find(x=>x[0]===id);if(!d)return;if(d[4]==='tap')state.track.today[id]+=v;else state.track.today[id]=v;});if(logs.length)state.track.own=true;};
+const pipBegin=text=>{Object.assign(state.talk,{log:[],step:0,draft:{}});state.talk.log.push({t:'me',text});state.talk.draft={what:text};state.talk.step=1;talkSay('Thank you for telling me. Five quick questions, then I’ll write it down in your words.');talkAsk();};
+function planRun(){
+  const O=state.one,r=O.res;if(!r||r.kind!=='plan'||r.done)return;
+  r.steps.forEach(st=>{if(!st.on)return;
+    if(st.kind==='track')applyLogs(st.logs);
+    else if(st.kind==='worry')pipBegin(st.text);
+    else if(st.kind==='care')hear(O.said);
+    else if(st.kind==='info'){const tp=INFO.find(x=>x.id===st.ids[0]).topic;state.talk.asked[tp]=(state.talk.asked[tp]||0)+1;}
+    st.done=true;});
+  r.done=true;O.said='';toast('Done.');
+}
+async function agentLive(text){
+  const O=state.one;text=String(text||'').trim().slice(0,400);
+  if(!text||EMERG.test(text)||!pip.live||!pip.sample){oneRoute(text);return;}
+  O.said=text;O.res={kind:'thinking'};render();
+  const logs=[],steps=[],lim=(v,mx)=>Math.min(mx,Math.max(0,Number(v)||0));
+  const tools=[
+   {name:'plan_log',description:'Add a step that logs today’s counts the parent stated. Only use numbers the parent gave.',inputSchema:{type:'object',properties:{feeds:{type:'number'},wet_nappies:{type:'number'},sleep_hours:{type:'number'},weight_kg:{type:'number'},meals:{type:'number'}}},
+    execute(i){[['feeds',i.feeds,12],['nappies',i.wet_nappies,12],['sleep',i.sleep_hours,16],['weight',i.weight_kg,80],['meals',i.meals,8]].forEach(([id,v,mx])=>{if(v!=null&&lim(v,mx)>0&&!logs.some(x=>x[0]===id))logs.push([id,lim(v,mx)]);});return 'Added to the plan. Nothing is logged until the parent confirms.';}},
+   {name:'plan_note',description:'Add a step that starts a note for the doctor. Pass the parent’s own words about the worry, copied exactly.',inputSchema:{type:'object',properties:{words:{type:'string'}},required:['words']},
+    execute(i){const w=String(i.words||'').trim().slice(0,400);if(w&&!steps.some(x=>x.kind==='worry'))steps.push({kind:'worry',on:true,label:'Start a note with Pip',detail:'“'+w+'”',text:w});return 'Added to the plan.';}},
+   {name:'plan_find_doctors',description:'Add a step that finds paediatricians. Use only when the parent asks to find, see or book a doctor. Never use it for a "should I" question.',inputSchema:{type:'object',properties:{}},
+    execute(){if(!steps.some(x=>x.kind==='care'))steps.push({kind:'care',on:true,label:'Find your top three doctors',detail:'Matched to your child and where you live'});return 'Added to the plan.';}},
+   {name:'plan_reading',description:'Add a step that shows a trusted page. Pass the parent’s question.',inputSchema:{type:'object',properties:{question:{type:'string'}},required:['question']},
+    execute(i){const ids=infoFor(String(i.question||'')).map(x=>x.id);if(ids.length&&!steps.some(x=>x.kind==='info'))steps.push({kind:'info',on:true,label:'Find something trusted to read',detail:ids.map(id=>INFO.find(x=>x.id===id).title).join(', '),ids});return ids.length?'Added to the plan.':'No trusted page fits. Do not answer the question yourself.';}}];
+  try{
+    await pip.sample([{role:'user',content:'You plan admin steps for a parent on PaedsMe, an Australian children’s health site. Read the parent’s message and call the plan tools for each job it contains. Do not answer health questions, do not say what anything is or whether it is normal, and do not give advice. Call tools only; your text is not shown.\nParent: '+text}],{cache:false,modelTier:'quick',tools});
+    if(logs.length)steps.push({kind:'track',on:true,label:'Log '+logWords(logs),detail:'Added to today’s counts',logs});
+    const order=['worry','track','care','info'];steps.sort((a,b)=>order.indexOf(a.kind)-order.indexOf(b.kind));
+    if(steps.length>1){O.res={kind:'plan',steps,done:false,live:true};O.counts.plan++;}else oneRoute(text);
+  }catch(e){oneRoute(text);}
+}
+const oneGo=async text=>{if(pip.live&&pip.sample)await agentLive(text);else oneRoute(text);render();oneShow();};
 function oneRoute(text,as){
   text=String(text||'').trim().slice(0,400);const O=state.one;O.said=text;O.res=null;
   if(!text){toast('Type a few words first');return;}
   if(EMERG.test(text)){O.res={kind:'urgent'};O.counts.urgent++;return;}
+  if(!as){const steps=agentPlan(text);if(steps.length>1){O.res={kind:'plan',steps,done:false};O.counts.plan++;return;}}
   const logs=oneTrack(text);
   const kind=as||(ASKS.test(text)?'info':logs.length&&!isQ(text)?'track':CARE_RX.test(text)&&!/^\s*(should|do i|does)\b/i.test(text)?'care':isQ(text)?'info':'worry');
   O.counts[kind]++;
@@ -565,6 +618,13 @@ function oneRoute(text,as){
 }
 function oneResult(){
   const O=state.one,r=O.res;if(!r)return '';let body='';
+  if(r.kind==='thinking')return `<section class="strip" id="one-res"><div class="wrap"><div class="panel onecard" role="status"><div class="agent-head">${PIP_SVG}<div><b>Pip is reading that</b><span class="sub">One moment.</span></div></div></div></div></section>`;
+  if(r.kind==='plan'){
+    const out=st=>!st.done?'':st.kind==='worry'?`<a class="btn" href="#talk">Answer Pip’s five questions</a>`:st.kind==='track'?`<a class="btn" href="#track">Open Track</a>`:st.kind==='care'?(m=>m.length?`<span class="sub">${m.map((x,i)=>['1st','2nd','3rd'][i]+' '+esc(x.c.name)).join(' · ')}</span><a class="btn" href="#find-care">Choose your doctors</a>`:`<a class="btn" href="#find-care">Open Find care</a>`)(match(state.q).slice(0,3)):infoCards(st.ids);
+    const n=r.steps.filter(x=>x.on).length;
+    return `<section class="strip" id="one-res"><div class="wrap"><div class="panel onecard plan" role="status"><div class="agent-head">${PIP_SVG}<div><b>${r.done?'Done. Here’s what I did':'Here’s what I can do'}</b><span class="sub">${r.done?'Tap a step to carry on.':'Untick anything you don’t want. Nothing happens until you say so.'}</span></div></div>
+      <ol class="psteps">${r.steps.map((st,i)=>`<li class="${st.done?'done':st.on?'':'off'}">${r.done?`<span class="pmark" aria-hidden="true">${st.done?TICK:''}</span>`:`<input type="checkbox" id="plan-${i}" data-plan="${i}"${st.on?' checked':''} aria-label="${esc(st.label)}">`}<div class="txt"><label for="plan-${i}"><b>${esc(st.label)}</b></label><span class="sub">${st.done||!r.done?esc(st.detail):'Skipped'}</span>${out(st)}</div></li>`).join('')}</ol>
+      ${r.done?`<div class="acts"><a class="btn primary" href="#timeline">Open my timeline</a></div>`:`<div class="acts"><button type="button" class="primary cta" data-act="plan-go"${n?'':' disabled'}>Do ${n===1?'it':'all '+n} ${ARROW}</button><button type="button" data-act="plan-no">Not now</button></div>`}</div></div></section>`;}
   if(r.kind==='urgent')body=`<p class="alarm"><b>In danger? Call 000 now.</b></p><p>For a nurse at any hour, call healthdirect on 1800 022 222.</p><div><a class="btn primary" href="#urgent">Speak to a paediatrician by video</a></div>`;
   else if(r.kind==='track')body=r.items.length?`<h2>Logged</h2><ul class="tl">${r.items.map(([id,v])=>{const d=TRK.find(x=>x[0]===id);return `<li style="--s:var(--accent-soft)"><span class="ti" aria-hidden="true">${d[3]}</span><div class="txt"><b>${d[1]}</b><span class="sub">${id==='mood'?MOODS[v]:d[4]==='num'?v+' '+d[2]:plural(v,d[5])}</span></div></li>`;}).join('')}</ul>${trackChart(r.items[0][0])}<a class="more" href="#track">Open Track ${ARROW}</a>`
     :`<h2>Nothing to log yet</h2><p>Add a number, such as “2 feeds” or “slept 9 hours”, or use Track.</p><div><a class="btn primary" href="#track">Open Track</a></div>`;
@@ -602,7 +662,7 @@ function home(){
   <section class="sec"><div class="wrap">${secHead('Your timeline','Everything in one place','What you say lands here, ready to show your doctor.')}
    ${timelineList(3)}
    <div class="cta-row center"><a class="btn primary cta" href="#timeline">Open my timeline ${ARROW}</a></div></div></section>
-  <section class="sec alt"><div class="wrap">${secHead('What it can do','One box, five jobs')}
+  <section class="sec alt"><div class="wrap">${secHead('What it can do','One message, many jobs')}
    <nav class="golinks" aria-label="All features"><a href="#talk">${I.ask}<span>Talk to Pip</span></a><a href="#track">${I.chart}<span>Track</span></a><a href="#find-care">${I.people}<span>Find care</span></a><a href="#learn">${I.play}<span>Learn</span></a><a href="#urgent">${I.cam}<span>Urgent video call</span></a></nav></div></section>
   <section class="sec"><div class="wrap closer"><span class="kick">The app</span><h2>Want this on your phone?</h2><p>The app isn’t built yet. Tell us you want it.</p>
    <div class="cta-row center"><a class="btn primary cta" href="#get-app" data-cta="home">Get the app ${ARROW}</a></div></div></section>`;
@@ -613,7 +673,8 @@ function timelineView(){
   <section class="dash fam"><div class="wrap"><section class="panel tlbox"><div class="row"><h2>Today</h2><span class="chip quiet">${plural(n,'item')}</span></div>
     ${timelineList(0)}
     <div class="cta-row"><button type="button" class="primary cta" data-act="tl-share"${n?'':' disabled'}>Share with my doctor</button><a class="btn cta" href="#home">Add something</a></div>
-    <p class="foot">Sharing copies it so you can paste it into a message. Stays on this device.</p></section></div></section>`;
+    <p class="foot">Sharing copies it so you can paste it into a message.</p>
+    <div class="keep"><div class="txt"><b>Kept on this device</b><span class="sub">Your notes, counts and doctors stay here between visits. Nothing is sent anywhere.</span></div>${state.wipe?`<div class="acts"><button type="button" class="danger" data-act="wipe-yes">Yes, clear it</button><button type="button" data-act="wipe-no">Keep it</button></div>`:`<button type="button" data-act="wipe">Clear everything on this device</button>`}</div></section></div></section>`;
 }
 /* Talk it through (19 Nov 2026). The Family app's job, done as a conversation: a parent says what worries them, Pip asks five
    short questions, and the answer is a note in the parent's own words. Pip records and relays. It never says what something is,
@@ -720,7 +781,7 @@ function talkView(){
      <section class="panel notesbox" id="notes"><div class="nb-head"><span class="nb-ico" aria-hidden="true">${NOTE_ICO}</span><div><h2>Your notes</h2><span class="sub">Notes you save with Pip are kept here.</span></div><span class="chip">${T.saved.length} saved</span></div>
       ${saved}
       ${state.acct.on?`<div class="nb-acct done"><b>${TICK} Your notes are linked to your email</b><span class="sub">Sign in with it on any device to see them.</span><p class="foot">Demo only. Nothing you typed was saved or sent.</p><div><button type="button" data-act="acct-reset">Use a different email</button></div></div>`
-       :`<form class="nb-acct" id="acct-form" novalidate><b>Get back to your notes anywhere</b><span class="sub">Right now they stay on this device. Add your details to keep them.</span>
+       :`<form class="nb-acct" id="acct-form" novalidate><b>Get back to your notes anywhere</b><span class="sub">Right now they stay on this device only. Add your details to reach them anywhere.</span>
         <div class="two2"><div class="field"><label for="ac-name">Your first name</label><input type="text" id="ac-name" maxlength="40" autocomplete="given-name"></div><div class="field"><label for="ac-email">Email</label><input type="email" id="ac-email" maxlength="120" autocomplete="email" placeholder="you@example.com"></div></div>
         <div class="two2"><div class="field"><label for="ac-child">Child’s first name</label><input type="text" id="ac-child" maxlength="40"></div><div class="field"><label for="ac-age">Child’s age</label><select id="ac-age">${opts([['','Choose'],...TELE_AGES],'')}</select></div></div>
         <label class="check"><input type="checkbox" id="ac-ok"><span>I agree PaedsMe can keep my notes and these details.</span></label>
@@ -1063,7 +1124,7 @@ function teamView(){
     <p class="foot">Counts only. What a parent types on the request is not kept. The hours, the wait and the fee need the clinical lead's decision.</p></section>
    <section class="panel"><div class="row"><h2>The one box</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <div class="kpis flat">${kpi('A worry',state.one.counts.worry,'sent to Pip')}${kpi('A count',state.one.counts.track,'sent to Track')}${kpi('A doctor',state.one.counts.care,'sent to Find care')}${kpi('A question',state.one.counts.info,'a trusted page')}</div>
-    <p class="foot">Emergency words seen: ${state.one.counts.urgent}. Counts only. What a parent types is not kept.</p></section>
+    <p class="foot">Plans with more than one job: ${state.one.counts.plan}. Emergency words seen: ${state.one.counts.urgent}. Counts only. What a parent types is not kept.</p></section>
    <section class="panel"><div class="row"><h2>Demand for the app</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <div class="kpis flat">${kpi('Site visits',w.visits.toLocaleString('en-AU'),'synthetic')}${kpi('Get the app taps',taps,Math.round(100*taps/w.visits)+'% of visits')}${kpi('Joined the list',w.joins,Math.round(100*w.joins/taps)+'% of taps')}${kpi('Most wanted',use[0],use[1]+' picks')}</div>
     <p class="sub">Note accounts: ${state.acct.count} parents added an email to keep their notes.</p>
@@ -1094,7 +1155,7 @@ function render(){
   const root=document.getElementById('view');document.body.dataset.view=v;root.classList.toggle('enter',render.last!==v);render.last=v;
   root.innerHTML=VIEWS[v]();
   const fam=v==='family';
-  syncFab();paintHero();
+  syncFab();paintHero();saveLocal();
   if(v==='talk'){const l=$('talk-log');if(l)l.scrollTop=l.scrollHeight;if(render.focusTalk){render.focusTalk=false;const ti=$('talk-input');if(ti){ti.focus({preventScroll:true});if(ti.scrollIntoView)ti.scrollIntoView({block:'nearest'});}}}
   if(fam&&state.quick){const q=$('quick-input');if(q)q.focus();}
 }
@@ -1159,10 +1220,15 @@ document.addEventListener('click',e=>{
   else if(a==='talk-info'){const n=state.talk.saved.find(x=>x.id===b.dataset.id),hits=n?infoFor(n.d.what):[];state.talk.log.forEach(m=>{delete m.next;});
     if(hits.length)talkSay('Here is general information from a trusted Australian source. It is not about your child, and your GP or a nurse can tell you more.',{info:hits.map(x=>x.id)});else talkSay('I do not have a trusted page on that yet. A nurse can talk it through with you on 1800 022 222.');}
   else if(a==='talk-learn'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);state.learnOpen=talkTopic(n?n.d.what:'');state.playing=null;location.hash='learn';return;}
-  else if(a==='one-ex'){oneRoute(ONE_EX[+b.dataset.i][1]);render();oneShow();return;}
+  else if(a==='one-ex'){const box=$('one-said');if(box)box.value=ONE_EX[+b.dataset.i][1];oneGo(ONE_EX[+b.dataset.i][1]);return;}
+  else if(a==='plan-go'){planRun();render();oneShow();return;}
+  else if(a==='plan-no'){state.one.res=null;}
   else if(a==='one-as'){oneRoute(state.one.said,b.dataset.k);render();oneShow();return;}
   else if(a==='one-listen'){oneListen();return;}
   else if(a==='tl-share'){const t=timelineText();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copied. Paste it into a message, or show it at the visit.'),()=>toast('Show this page at the visit.'));return;}
+  else if(a==='wipe'){state.wipe=true;}
+  else if(a==='wipe-no'){state.wipe=false;}
+  else if(a==='wipe-yes'){wipeLocal();toast('Cleared from this device.');}
   else if(a==='acct-reset'){state.acct.on=false;}
   else if(a==='wait-reset'){state.wait.joined=false;}
   else if(a==='survey'){toast('The parent survey is not open yet. The link will sit here.');return;}
@@ -1183,6 +1249,7 @@ document.addEventListener('change',e=>{
   if(t.dataset.prep){state.prepDone[t.dataset.prep]=t.checked;state.prepOpen=true;render();return;}
   if(t.dataset.ms){state.milestones[+t.dataset.ms][1]=t.checked;render();return;}
   if(t.id==='media-file'){pickMedia(t.files[0]);const s=$('mslot');if(s)s.innerHTML=mediaSlot(s.dataset.label,s.dataset.accept);return;}
+  if(t.dataset.plan){const r=state.one.res;if(r&&r.kind==='plan'&&!r.done){r.steps[+t.dataset.plan].on=t.checked;render();}return;}
   if(t.id==='urg-ok'){state.urgent.ok=t.checked;return;}
   if(t.id==='urg-age'){state.urgent.age=t.value;return;}
   if(t.id==='urg-what'){state.urgent.what=t.value.slice(0,400);return;}
@@ -1225,7 +1292,7 @@ document.addEventListener('submit',e=>{
     U.sent=true;U.count++;toast('Request sent. This is a demo, so nothing was charged.');window.scrollTo(0,0);render();return;}
   if(e.target.dataset&&e.target.dataset.trk){const id=e.target.dataset.trk,d=TRK.find(x=>x[0]===id),v=parseFloat($('trk-'+id).value);if(!(v>0)||v>d[6]){toast('Type a number first');return;}trackLog(id,Math.round(v*10)/10);render();return;}
   if(e.target.id==='talk-form'){const v=$('talk-input').value;if(!v.trim()){toast('Type a few words first');return;}talkSend(v);render.focusTalk=true;render();return;}
-  if(e.target.id==='one-form'){oneRoute($('one-said').value);render();oneShow();return;}
+  if(e.target.id==='one-form'){oneGo($('one-said').value);return;}
   if(e.target.id==='acct-form'){const g=i=>$(i).value.trim();if(!g('ac-name')){toast('Add your first name');return;}if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g('ac-email'))){toast('Type your email first');return;}if(!g('ac-child')||!$('ac-age').value){toast('Add your child’s first name and age');return;}if(!$('ac-ok').checked){toast('Tick the box to agree first');return;}
     state.acct.on=true;state.acct.count++;toast('Done. Your notes are linked to your email.');render();return;}
   if(e.target.id==='wait-form'){const em=$('wait-email').value.trim(),w=state.wait;if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Type your email first');return;}
@@ -1406,7 +1473,7 @@ $('pip-open').addEventListener('click',()=>openPip(true));
 $('pip-close').addEventListener('click',()=>openPip(false));
 $('pip-stop').addEventListener('click',()=>pip.ctl&&pip.ctl.abort());
 $('pip-voice').addEventListener('click',e=>{pip.voice=!pip.voice;e.currentTarget.setAttribute('aria-pressed',String(pip.voice));e.currentTarget.textContent=pip.voice?'Voice on':'Read aloud';if(!pip.voice&&pip.tts)pip.tts.stop();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)openPip(false);if(e.key==='Enter'&&!e.shiftKey&&e.target.id==='one-said'){e.preventDefault();oneRoute(e.target.value);render();oneShow();return;}if(e.key==='Enter'&&!e.shiftKey&&e.target.id==='q-said'){e.preventDefault();hear(e.target.value);render();toResults();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)openPip(false);if(e.key==='Enter'&&!e.shiftKey&&e.target.id==='one-said'){e.preventDefault();oneGo(e.target.value);return;}if(e.key==='Enter'&&!e.shiftKey&&e.target.id==='q-said'){e.preventDefault();hear(e.target.value);render();toResults();}});
 (async()=>{
   if(!window.claude||!window.claude.use)return;
   try{const s=await window.claude.use('sample');if(s){const lim=await s.limits().catch(()=>null);if(lim&&lim.tools){pip.sample=s;pip.live=true;}}
@@ -1418,7 +1485,24 @@ document.addEventListener('toggle',e=>{const t=e.target;if(t.id==='f-more')state
 /* On a tablet or phone the header tucks away while scrolling down and returns on the way up. */
 let lastY=0;window.addEventListener('scroll',()=>{const y=window.scrollY,t=document.querySelector('.top');if(!t)return;if(window.innerWidth<=940&&y>lastY+6&&y>160)t.classList.add('tuck');else if(y<lastY-6||y<=160)t.classList.remove('tuck');lastY=y;},{passive:true});
 window.addEventListener('hashchange',()=>{const tp=document.querySelector('.top');if(tp)tp.classList.remove('tuck');presStop();state.pres.on=false;render();renderPip();window.scrollTo(0,0);});
-function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked&&saved.urgent&&saved.acct)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;state.one.listening=false;render();renderPip();}
+/* Remembered on the device (5 Dec 2026). The parent's own things (saved notes, today's counts, chosen doctors, a video call
+   request and whether they added their details) are kept in this browser's storage, so the timeline is still there on the next
+   visit. Nothing leaves the device. The details typed into the notes form are still never kept. Today's counts start again on a
+   new day. "Clear everything on this device" wipes it. Storage can be blocked, so every call is guarded. */
+const LS='paedsme.mine.v1';
+const dayKey=()=>new Date().toDateString();
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify({day:dayKey(),saved:state.talk.saved,seq:state.talk.seq,today:state.track.today,own:state.track.own,req:state.req,urgent:!!state.urgent.sent,acct:!!state.acct.on}));}catch(e){}}
+function loadLocal(){
+  let m=null;try{m=JSON.parse(localStorage.getItem(LS)||'null');}catch(e){}
+  if(!m||typeof m!=='object')return false;
+  if(Array.isArray(m.saved)){state.talk.saved=m.saved.filter(n=>n&&n.id&&n.d&&typeof n.d.what==='string').slice(0,50);state.talk.seq=Math.max(+m.seq||0,state.talk.saved.length);}
+  if(m.day===dayKey()&&m.today&&typeof m.today==='object'){TRK.forEach(d=>{const v=m.today[d[0]];if(typeof v==='number'&&v>=0&&v<=80)state.track.today[d[0]]=v;});state.track.own=!!m.own;}
+  if(m.req&&typeof m.req==='object'){const out={};Object.entries(m.req).forEach(([k,r])=>{const ns=reqNames(r).filter(nm=>CLINICIANS.some(c=>c.name===nm)).slice(0,3);if(r&&ns.length)out[k]={names:ns,step:Math.min(3,Math.max(0,+r.step||0)),concern:CONCERNS.some(c=>c[0]===r.concern)?r.concern:'development',age:Math.min(18,Math.max(0,+r.age||0)),said:String(r.said||'').slice(0,400),date:r.date};});state.req=out;}
+  state.urgent.sent=!!m.urgent;state.acct.on=!!m.acct;return true;
+}
+function wipeLocal(){try{localStorage.removeItem(LS);}catch(e){}
+  state.talk.saved=[];state.talk.seq=0;Object.assign(state.talk,{log:[],step:0,draft:{}});Object.assign(state.track.today,JSON.parse(JSON.stringify(SEED.track.today)));state.track.own=false;state.req={};state.urgent.sent=false;state.acct.on=false;state.one.res=null;state.one.said='';state.wipe=false;}
+function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked&&saved.urgent&&saved.acct)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;state.one.listening=false;state.wipe=false;if(!(saved&&saved.kids))loadLocal();render();renderPip();}
 try{if('speechSynthesis' in window){speechSynthesis.getVoices();}}catch(e){}
 try{loadHeroes();}catch(e){}
 window.claude?.hot?.snapshot?.(()=>state);
