@@ -1031,3 +1031,6 @@ button.danger{background:var(--orange);border-color:var(--orange);color:#fff}
 .psteps .tinfos{align-self:stretch}
 .onecard.plan .acts{flex-direction:row;flex-wrap:wrap;align-items:center}
 @media (max-width:620px){.onecard.plan .acts>*{flex:1 1 100%}}
+
+.aiwarn{font-size:.86rem;max-width:44ch;text-align:center}
+.agent-head .chip{vertical-align:middle;font-family:var(--body);font-size:.72rem}

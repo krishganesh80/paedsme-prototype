@@ -581,9 +581,22 @@ function planRun(){
     st.done=true;});
   r.done=true;O.said='';toast('Done.');
 }
+/* The address of the small server that holds the Claude API key (paedsme/agent-server). It is set in index.html, and is empty
+   until that server is deployed. While it is empty the plan is made by rules. When it is set, the parent's sentence is sent to
+   that server and on to Claude, so the page says so under the box. Emergency words are never sent. */
+const AGENT_URL=(typeof window!=='undefined'&&typeof window.PAEDSME_AGENT_URL==='string'&&window.PAEDSME_AGENT_URL)||'';
+const agentOn=()=>!!AGENT_URL||!!(pip.live&&pip.sample);
+async function agentRemote(text,tools){
+  const ctl=typeof AbortController!=='undefined'?new AbortController():null,timer=setTimeout(()=>ctl&&ctl.abort(),20000);
+  try{const r=await fetch(AGENT_URL,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text}),signal:ctl?ctl.signal:undefined});
+    if(!r.ok)throw new Error('agent '+r.status);const j=await r.json();
+    if(j.urgent)return 'urgent';
+    (Array.isArray(j.steps)?j.steps:[]).slice(0,6).forEach(c=>{const t=tools.find(x=>x.name===c.name);if(t&&c.input&&typeof c.input==='object')t.execute(c.input);});
+    return 'ok';}finally{clearTimeout(timer);}
+}
 async function agentLive(text){
   const O=state.one;text=String(text||'').trim().slice(0,400);
-  if(!text||EMERG.test(text)||!pip.live||!pip.sample){oneRoute(text);return;}
+  if(!text||EMERG.test(text)||!agentOn()){oneRoute(text);return;}
   O.said=text;O.res={kind:'thinking'};render();
   const logs=[],steps=[],lim=(v,mx)=>Math.min(mx,Math.max(0,Number(v)||0));
   const tools=[
@@ -596,13 +609,14 @@ async function agentLive(text){
    {name:'plan_reading',description:'Add a step that shows a trusted page. Pass the parent’s question.',inputSchema:{type:'object',properties:{question:{type:'string'}},required:['question']},
     execute(i){const ids=infoFor(String(i.question||'')).map(x=>x.id);if(ids.length&&!steps.some(x=>x.kind==='info'))steps.push({kind:'info',on:true,label:'Find something trusted to read',detail:ids.map(id=>INFO.find(x=>x.id===id).title).join(', '),ids});return ids.length?'Added to the plan.':'No trusted page fits. Do not answer the question yourself.';}}];
   try{
-    await pip.sample([{role:'user',content:'You plan admin steps for a parent on PaedsMe, an Australian children’s health site. Read the parent’s message and call the plan tools for each job it contains. Do not answer health questions, do not say what anything is or whether it is normal, and do not give advice. Call tools only; your text is not shown.\nParent: '+text}],{cache:false,modelTier:'quick',tools});
+    if(AGENT_URL){if(await agentRemote(text,tools)==='urgent'){O.res={kind:'urgent'};O.counts.urgent++;return;}}
+    else await pip.sample([{role:'user',content:'You plan admin steps for a parent on PaedsMe, an Australian children’s health site. Read the parent’s message and call the plan tools for each job it contains. Do not answer health questions, do not say what anything is or whether it is normal, and do not give advice. Call tools only; your text is not shown.\nParent: '+text}],{cache:false,modelTier:'quick',tools});
     if(logs.length)steps.push({kind:'track',on:true,label:'Log '+logWords(logs),detail:'Added to today’s counts',logs});
     const order=['worry','track','care','info'];steps.sort((a,b)=>order.indexOf(a.kind)-order.indexOf(b.kind));
-    if(steps.length>1){O.res={kind:'plan',steps,done:false,live:true};O.counts.plan++;}else oneRoute(text);
+    if(steps.length){O.res={kind:'plan',steps,done:false,live:true};O.counts.plan++;}else oneRoute(text);
   }catch(e){oneRoute(text);}
 }
-const oneGo=async text=>{if(pip.live&&pip.sample)await agentLive(text);else oneRoute(text);render();oneShow();};
+const oneGo=async text=>{if(agentOn())await agentLive(text);else oneRoute(text);render();oneShow();};
 function oneRoute(text,as){
   text=String(text||'').trim().slice(0,400);const O=state.one;O.said=text;O.res=null;
   if(!text){toast('Type a few words first');return;}
@@ -622,7 +636,7 @@ function oneResult(){
   if(r.kind==='plan'){
     const out=st=>!st.done?'':st.kind==='worry'?`<a class="btn" href="#talk">Answer Pip’s five questions</a>`:st.kind==='track'?`<a class="btn" href="#track">Open Track</a>`:st.kind==='care'?(m=>m.length?`<span class="sub">${m.map((x,i)=>['1st','2nd','3rd'][i]+' '+esc(x.c.name)).join(' · ')}</span><a class="btn" href="#find-care">Choose your doctors</a>`:`<a class="btn" href="#find-care">Open Find care</a>`)(match(state.q).slice(0,3)):infoCards(st.ids);
     const n=r.steps.filter(x=>x.on).length;
-    return `<section class="strip" id="one-res"><div class="wrap"><div class="panel onecard plan" role="status"><div class="agent-head">${PIP_SVG}<div><b>${r.done?'Done. Here’s what I did':'Here’s what I can do'}</b><span class="sub">${r.done?'Tap a step to carry on.':'Untick anything you don’t want. Nothing happens until you say so.'}</span></div></div>
+    return `<section class="strip" id="one-res"><div class="wrap"><div class="panel onecard plan" role="status"><div class="agent-head">${PIP_SVG}<div><b>${r.done?'Done. Here’s what I did':'Here’s what I can do'}${r.live?' <span class="chip good">Live AI</span>':''}</b><span class="sub">${r.done?'Tap a step to carry on.':'Untick anything you don’t want. Nothing happens until you say so.'}</span></div></div>
       <ol class="psteps">${r.steps.map((st,i)=>`<li class="${st.done?'done':st.on?'':'off'}">${r.done?`<span class="pmark" aria-hidden="true">${st.done?TICK:''}</span>`:`<input type="checkbox" id="plan-${i}" data-plan="${i}"${st.on?' checked':''} aria-label="${esc(st.label)}">`}<div class="txt"><label for="plan-${i}"><b>${esc(st.label)}</b></label><span class="sub">${st.done||!r.done?esc(st.detail):'Skipped'}</span>${out(st)}</div></li>`).join('')}</ol>
       ${r.done?`<div class="acts"><a class="btn primary" href="#timeline">Open my timeline</a></div>`:`<div class="acts"><button type="button" class="primary cta" data-act="plan-go"${n?'':' disabled'}>Do ${n===1?'it':'all '+n} ${ARROW}</button><button type="button" data-act="plan-no">Not now</button></div>`}</div></div></section>`;}
   if(r.kind==='urgent')body=`<p class="alarm"><b>In danger? Call 000 now.</b></p><p>For a nurse at any hour, call healthdirect on 1800 022 222.</p><div><a class="btn primary" href="#urgent">Speak to a paediatrician by video</a></div>`;
@@ -657,7 +671,7 @@ function home(){
       <textarea id="one-said" rows="2" maxlength="400" placeholder="She keeps waking at night and I don’t know why">${esc(O.said)}</textarea>
       <div class="ask-bar"><button type="button" class="mic" data-act="one-listen" aria-pressed="${!!O.listening}">${I.mic}<span>${O.listening?'Listening. Tap to stop':'Speak'}</span></button><button class="primary cta" type="submit">Go ${ARROW}</button></div></form>
      <div class="examples"><span>Try</span>${ONE_EX.map((e,i)=>`<button type="button" class="ex" data-act="one-ex" data-i="${i}">${e[0]}</button>`).join('')}</div>
-     <p class="onesafe">In danger? Call 000.</p></div></div>${sparks}</section>
+     <p class="onesafe">In danger? Call 000.</p>${AGENT_URL?'<p class="sub aiwarn">A live AI reads your message to plan the steps. It never gives health advice.</p>':''}</div></div>${sparks}</section>
   ${oneResult()}
   <section class="sec"><div class="wrap">${secHead('Your timeline','Everything in one place','What you say lands here, ready to show your doctor.')}
    ${timelineList(3)}
