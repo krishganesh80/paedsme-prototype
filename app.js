@@ -107,6 +107,8 @@ state.wait={joined:false,platform:null,visits:1240,taps:{header:96,home:71,talk:
 state.fold={};
 /* Note accounts: whether this visitor has added their details, and how many have. Counts only; nothing typed is kept. */
 state.acct={on:false,count:112};
+/* The one box: what was last said, the answer showing, and how often each route is taken. Counts only. */
+state.one={said:'',res:null,listening:false,counts:{worry:214,track:167,care:98,info:131,urgent:9}};
 state.urgent={ok:false,age:'',what:'',note:false,sent:false,count:14};
 /* Pip presents: which line is showing, whether it is playing, and the viewer's sound and transcript choices. */
 state.pres={i:0,on:false,sound:true,text:false,done:false};
@@ -178,6 +180,17 @@ const mediaSlot=(label,accept)=>pending?`<div class="mprev">${pending.kind==='vi
 const mediaBox=(label,accept)=>`<div class="mslot" id="mslot" data-label="${label}" data-accept="${accept}">${mediaSlot(label,accept)}</div><p class="foot">Prototype: it stays on this device. Nothing is uploaded.</p>`;
 const mediaView=x=>x.media&&MEDIA[x.media]?(MEDIA[x.media].kind==='video'?`<video class="mthumb" src="${MEDIA[x.media].url}" controls playsinline preload="metadata"></video>`:`<img class="mthumb" src="${MEDIA[x.media].url}" alt="Photo added by the parent">`):'';
 let rec=null;
+function oneListen(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition,O=state.one;
+  if(rec){rec.stop();return;}
+  if(!SR){toast('Voice is not available in this browser. Type it instead.');return;}
+  rec=new SR();rec.lang='en-AU';rec.interimResults=true;rec.continuous=false;let got='';
+  rec.onresult=e=>{got=[...e.results].map(r=>r[0].transcript).join(' ');const box=document.getElementById('one-said');if(box)box.value=got;};
+  rec.onerror=e=>{toast(e.error==='not-allowed'||e.error==='service-not-allowed'?'The microphone is blocked. Type it instead.':'Could not hear that. Try again, or type it.');};
+  rec.onend=()=>{rec=null;O.listening=false;if(got.trim())oneRoute(got);render();oneShow();};
+  try{rec.start();O.listening=true;render();}catch(e){rec=null;O.listening=false;toast('Voice did not start. Type it instead.');}
+}
+function oneShow(){const r=document.getElementById('one-res');if(r&&r.scrollIntoView)r.scrollIntoView({block:'center',behavior:'smooth'});}
 function listen(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(rec){rec.stop();return;}
@@ -520,33 +533,87 @@ function reqCard(id){
 /* One website (18 Nov 2026). The team is starting with the website alone, to test demand for the app. Home is the front door,
    Talk it through is the conversation with Pip (My family, the record as web pages, is parked from 19 Nov), and Get the app is the
    list that measures whether families want it on a phone. */
+/* One box, one timeline (4 Dec 2026). The home page is a single box: a parent says what is on their mind once, and the site
+   sends it to the right place. A worry goes to Pip, a count goes to Track, a request for a doctor goes to Find care, and a
+   question gets a trusted page. Everything saved lands in one timeline that can be shared with a doctor.
+   The box sorts by what the parent asked for and never by how serious it sounds; only the fixed emergency words bring up 000.
+   Every answer offers the other routes, because keyword sorting will sometimes guess wrong. */
+const ONE_EX=[['A worry','She keeps waking at night and I don’t know why'],['Log it','Fed at 3pm, one wet nappy'],['Find a doctor','I need a paediatrician in Brisbane for my 7 year old'],['Ask a question','How do I start solids?']];
+const ONE_ALT=[['worry','Tell Pip about it'],['track','Log it'],['care','Find a doctor'],['info','Look it up']];
+const CARE_RX=/\b(need|find|want|looking for|book|get|see)\b[^?]*\b(paediatrician|pediatrician|doctor|specialist|referral|appointment)\b/i;
+function oneTrack(text){
+  const t=' '+String(text).toLowerCase().replace(/\b[a-z]+\b/g,w=>NUMW.includes(w)?NUMW.indexOf(w):w)+' ',out=[],num=rx=>{const m=t.match(rx);return m?parseFloat(m[1]):null;};
+  const fd=num(/(\d+)\s*(?:feeds?|bottles?)\b/);if(fd||/\b(fed|breastfed|had a (feed|bottle))\b/.test(t))out.push(['feeds',Math.min(12,fd||1)]);
+  const np=num(/(\d+)\s*(?:wet\s*)?napp(?:y|ies)\b/);if(np||/\bwet napp(y|ies)\b/.test(t))out.push(['nappies',Math.min(12,np||1)]);
+  const sl=num(/slept\s*(?:for\s*)?(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)\b/)||num(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)\s*(?:of\s*)?sleep\b/);if(sl&&sl<=16)out.push(['sleep',sl]);
+  const wt=num(/(\d+(?:\.\d+)?)\s*(?:kg|kilos?|kilograms?)\b/);if(wt&&wt<=80)out.push(['weight',wt]);
+  const ml=num(/(\d+)\s*meals?\b/);if(ml||/\b(ate|had) (her |his |their )?(breakfast|lunch|dinner)\b/.test(t))out.push(['meals',Math.min(8,ml||1)]);
+  const md=t.match(/\bmood\b[^.]*?\b(very upset|upset|unsettled|calm|happy)\b/);if(md)out.push(['mood',MOODS.findIndex(x=>x.toLowerCase()===md[1])]);
+  return out;
+}
+function oneRoute(text,as){
+  text=String(text||'').trim().slice(0,400);const O=state.one;O.said=text;O.res=null;
+  if(!text){toast('Type a few words first');return;}
+  if(EMERG.test(text)){O.res={kind:'urgent'};O.counts.urgent++;return;}
+  const logs=oneTrack(text);
+  const kind=as||(ASKS.test(text)?'info':logs.length&&!isQ(text)?'track':CARE_RX.test(text)&&!/^\s*(should|do i|does)\b/i.test(text)?'care':isQ(text)?'info':'worry');
+  O.counts[kind]++;
+  if(kind==='track'){logs.forEach(([id,v])=>{const d=TRK.find(x=>x[0]===id);if(d[4]==='tap')state.track.today[id]+=v;else state.track.today[id]=v;});if(logs.length)state.track.own=true;O.res={kind,items:logs};}
+  else if(kind==='care'){hear(text);O.res={kind};toast('Here are your matches.');}
+  else if(kind==='info'){const hits=infoFor(text),tp=hits.length?hits[0].topic:'none';state.talk.asked[tp]=(state.talk.asked[tp]||0)+1;O.res={kind,ids:hits.map(x=>x.id)};}
+  else{Object.assign(state.talk,{log:[],step:0,draft:{}});state.talk.log.push({t:'me',text});state.talk.draft={what:text};state.talk.step=1;talkSay('Thank you for telling me. Five quick questions, then I’ll write it down in your words.');talkAsk();O.said='';location.hash='talk';}
+}
+function oneResult(){
+  const O=state.one,r=O.res;if(!r)return '';let body='';
+  if(r.kind==='urgent')body=`<p class="alarm"><b>In danger? Call 000 now.</b></p><p>For a nurse at any hour, call healthdirect on 1800 022 222.</p><div><a class="btn primary" href="#urgent">Speak to a paediatrician by video</a></div>`;
+  else if(r.kind==='track')body=r.items.length?`<h2>Logged</h2><ul class="tl">${r.items.map(([id,v])=>{const d=TRK.find(x=>x[0]===id);return `<li style="--s:var(--accent-soft)"><span class="ti" aria-hidden="true">${d[3]}</span><div class="txt"><b>${d[1]}</b><span class="sub">${id==='mood'?MOODS[v]:d[4]==='num'?v+' '+d[2]:plural(v,d[5])}</span></div></li>`;}).join('')}</ul>${trackChart(r.items[0][0])}<a class="more" href="#track">Open Track ${ARROW}</a>`
+    :`<h2>Nothing to log yet</h2><p>Add a number, such as “2 feeds” or “slept 9 hours”, or use Track.</p><div><a class="btn primary" href="#track">Open Track</a></div>`;
+  else if(r.kind==='care'){const m=match(state.q).slice(0,3);body=m.length?`<h2>Your top ${m.length===1?'match':m.length}</h2><ul class="orows">${m.map(({c},i)=>`<li>${c.photo?`<img class="ava2 face" src="${c.photo}" alt="" loading="lazy">`:`<span class="ava2" aria-hidden="true">${ini(c.name)}</span>`}<div class="txt"><b>${['1st','2nd','3rd'][i]} · ${esc(c.name)}</b><span class="sub">${esc(c.role)} · ${esc(c.region)} · ${c.rapid?'48 hours':c.wait+' days'}</span></div></li>`).join('')}</ul><div><a class="btn primary cta" href="#find-care">Choose your doctors ${ARROW}</a></div>`
+    :`<h2>No match yet</h2><p>Tell us your child’s age and where you live on Find care.</p><div><a class="btn primary" href="#find-care">Open Find care</a></div>`;}
+  else body=r.ids.length?`<h2>Something to read</h2>${infoCards(r.ids)}<a class="more" href="#learn">More guides ${ARROW}</a>`:`<h2>We can’t answer that one</h2><p>We can’t tell you about your own child. A nurse can talk with you now on 1800 022 222, and your GP can see them.</p>`;
+  return `<section class="strip" id="one-res"><div class="wrap"><div class="panel onecard" role="status">${body}${r.kind==='urgent'?'':`<div class="notit"><span class="sub">Not what you meant?</span>${ONE_ALT.filter(x=>x[0]!==r.kind).map(x=>`<button type="button" data-act="one-as" data-k="${x[0]}">${x[1]}</button>`).join('')}</div>`}</div></div></section>`;
+}
+function timelineItems(){
+  const out=[];
+  state.talk.saved.forEach(n=>out.push({ico:NOTE_ICO,t:'Note saved',d:n.d.what,href:'#talk',c:'violet'}));
+  if(state.track.own)TRK.forEach(d=>{const v=state.track.today[d[0]];if(d[4]==='tap'?v>0:v!=null)out.push({ico:d[3],t:d[1],d:d[0]==='mood'?MOODS[v]:d[4]==='num'?v+' '+d[2]:plural(v,d[5]),href:'#track',c:'accent'});});
+  Object.values(state.req).forEach(r=>{const ns=reqNames(r);if(ns.length)out.push({ico:I.people,t:r.step===3?'Visit booked':'Doctors chosen',d:ns.join(', '),href:'#find-care',c:'lime'});});
+  if(state.urgent.sent)out.push({ico:I.cam,t:'Video call requested',d:TELE.doctor,href:'#urgent',c:'sun'});
+  return out;
+}
+const timelineText=()=>'For my doctor, from a parent\n'+timelineItems().map(x=>x.t+': '+x.d).join('\n');
+function timelineList(max){
+  const all=timelineItems(),it=max?all.slice(0,max):all;
+  return it.length?`<ul class="tl">${it.map(x=>`<li style="--s:var(--${x.c}-soft)"><span class="ti" aria-hidden="true">${x.ico}</span><div class="txt"><b>${x.t}</b><span class="sub">${esc(x.d.length>90?x.d.slice(0,87)+'...':x.d)}</span></div><a class="btn" href="${x.href}">Open</a></li>`).join('')}</ul>${max&&all.length>max?`<p class="sub">And ${all.length-max} more.</p>`:''}`
+    :`<div class="tl-empty"><span aria-hidden="true">${NOTE_ICO}</span><p>Nothing yet. Whatever you say above lands here.</p></div>`;
+}
 function home(){
-  return `<section class="band"><div class="wrap band-2"><div class="band-text">
+  const O=state.one;
+  return `<section class="band band-c"><div class="wrap"><div class="band-text">
      <span class="eyebrow">For families in Australia</span>
-     <h1>Worried about your child? <em>Talk to Pip</em></h1>
-     <p class="lead">Tell Pip what you’ve noticed, the way you’d tell a friend. Pip writes it down clearly and helps you find the right person. Pip is an AI helper, not a doctor.</p>
-     <div class="cta-row"><a class="btn primary cta" href="#talk">Talk to Pip ${ARROW}</a><a class="btn cta" href="#find-care">Find care</a></div></div>
-    <div class="band-side"><div class="preview chatpv"><div class="pv-head">${PIP_SVG}<div><b>Pip</b><span class="sub">A sample conversation</span></div></div>
-      <div class="tmsg me">She keeps waking at night and I do not know why.</div>
-      <div class="tmsg bot">Thank you for telling me. When did you first notice it?</div>
-      <div class="tmsg me">About three weeks ago.</div>
-      <div class="tmsg bot">How often does it happen?</div>
-      <a class="more" href="#talk">Start your own ${ARROW}</a></div></div></div>${sparks}</section>
-  <section class="strip"><div class="wrap"><a class="linkcard urgentlink" href="#urgent"><span><b>Need a paediatrician soon?</b><span class="sub">Video call with ${TELE.doctor}. A fee applies. In danger, call 000.</span></span>${ARROW}</a></div></section>
-  <section class="sec"><div class="wrap">${secHead('Start here','What do you need today?')}
-   <div class="grid4">
-    <a class="feat" href="#talk" style="--s:var(--lime-soft)"><span class="dot">${I.ask}</span><h3>Pip</h3><p>Tell Pip what’s worrying you.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
-    <a class="feat" href="#find-care" style="--s:var(--accent-soft)"><span class="dot">${I.people}</span><h3>Find care</h3><p>A paediatrician by video, within 48 hours of your GP’s referral.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
-    <a class="feat" href="#adhd-care" style="--s:var(--violet-soft)"><span class="dot">${I.chart}</span><h3>ADHD care</h3><p>A clear plan, shared with your GP.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
-    <a class="feat" href="#learn" style="--s:var(--sun-soft)"><span class="dot">${I.play}</span><h3>Learn</h3><p>Short guides on feeding, sleep, skin and more.</p><span class="more" aria-hidden="true">${ARROW}</span></a>
-   </div></div></section>
-  <section class="sec alt"><div class="wrap"><div class="meet">
-    <div class="meet-text"><span class="meet-lab">${I.ask} Pip</span><h2>Tell Pip. Pip writes it down.</h2><p>Say what you’ve noticed, any time. You leave with a clear note to show your doctor.</p>
-     <a class="more big" href="#talk">Talk to Pip ${ARROW}</a>
-     <div class="who">${PIP_SVG}<div><b>Pip</b><span class="sub">AI helper, not a doctor</span></div></div></div>
-    <div class="meet-art">${howSteps()}</div></div></div></section>
-  <section class="sec"><div class="wrap closer"><span class="kick">The app</span><h2>Want Pip on your phone?</h2><p>The app isn’t built yet. Tell us you want it.</p>
+     <h1>What’s on your <em>mind?</em></h1>
+     <p class="lead">Say it once. We’ll take it from there.</p>
+     <form class="ask" id="one-form"><label class="sr" for="one-said">What’s on your mind</label>
+      <textarea id="one-said" rows="2" maxlength="400" placeholder="She keeps waking at night and I don’t know why">${esc(O.said)}</textarea>
+      <div class="ask-bar"><button type="button" class="mic" data-act="one-listen" aria-pressed="${!!O.listening}">${I.mic}<span>${O.listening?'Listening. Tap to stop':'Speak'}</span></button><button class="primary cta" type="submit">Go ${ARROW}</button></div></form>
+     <div class="examples"><span>Try</span>${ONE_EX.map((e,i)=>`<button type="button" class="ex" data-act="one-ex" data-i="${i}">${e[0]}</button>`).join('')}</div>
+     <p class="onesafe">In danger? Call 000.</p></div></div>${sparks}</section>
+  ${oneResult()}
+  <section class="sec"><div class="wrap">${secHead('Your timeline','Everything in one place','What you say lands here, ready to show your doctor.')}
+   ${timelineList(3)}
+   <div class="cta-row center"><a class="btn primary cta" href="#timeline">Open my timeline ${ARROW}</a></div></div></section>
+  <section class="sec alt"><div class="wrap">${secHead('What it can do','One box, five jobs')}
+   <nav class="golinks" aria-label="All features"><a href="#talk">${I.ask}<span>Talk to Pip</span></a><a href="#track">${I.chart}<span>Track</span></a><a href="#find-care">${I.people}<span>Find care</span></a><a href="#learn">${I.play}<span>Learn</span></a><a href="#urgent">${I.cam}<span>Urgent video call</span></a></nav></div></section>
+  <section class="sec"><div class="wrap closer"><span class="kick">The app</span><h2>Want this on your phone?</h2><p>The app isn’t built yet. Tell us you want it.</p>
    <div class="cta-row center"><a class="btn primary cta" href="#get-app" data-cta="home">Get the app ${ARROW}</a></div></div></section>`;
+}
+function timelineView(){
+  const n=timelineItems().length;
+  return `<section class="band band-s"><div class="wrap"><div class="band-row"><div class="band-text"><span class="eyebrow">My timeline</span><h1>Everything in one place</h1><p class="lead">Notes, counts and doctors, ready to show your doctor.</p></div></div></div>${sparks}</section>
+  <section class="dash fam"><div class="wrap"><section class="panel tlbox"><div class="row"><h2>Today</h2><span class="chip quiet">${plural(n,'item')}</span></div>
+    ${timelineList(0)}
+    <div class="cta-row"><button type="button" class="primary cta" data-act="tl-share"${n?'':' disabled'}>Share with my doctor</button><a class="btn cta" href="#home">Add something</a></div>
+    <p class="foot">Sharing copies it so you can paste it into a message. Stays on this device.</p></section></div></section>`;
 }
 /* Talk it through (19 Nov 2026). The Family app's job, done as a conversation: a parent says what worries them, Pip asks five
    short questions, and the answer is a note in the parent's own words. Pip records and relays. It never says what something is,
@@ -994,6 +1061,9 @@ function teamView(){
    <section class="panel"><div class="row"><h2>Urgent video calls</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <div class="kpis flat">${kpi('Requests',state.urgent.count,'asked for a video call')}${kpi('Fee',TELE.fee?money(TELE.fee):'Not set','to be agreed')}${kpi('With',TELE.short,'the only clinician offered')}${kpi('Payments','None','the demo takes no money')}</div>
     <p class="foot">Counts only. What a parent types on the request is not kept. The hours, the wait and the fee need the clinical lead's decision.</p></section>
+   <section class="panel"><div class="row"><h2>The one box</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
+    <div class="kpis flat">${kpi('A worry',state.one.counts.worry,'sent to Pip')}${kpi('A count',state.one.counts.track,'sent to Track')}${kpi('A doctor',state.one.counts.care,'sent to Find care')}${kpi('A question',state.one.counts.info,'a trusted page')}</div>
+    <p class="foot">Emergency words seen: ${state.one.counts.urgent}. Counts only. What a parent types is not kept.</p></section>
    <section class="panel"><div class="row"><h2>Demand for the app</h2><span class="chip quiet">Synthetic baseline, plus this session</span></div>
     <div class="kpis flat">${kpi('Site visits',w.visits.toLocaleString('en-AU'),'synthetic')}${kpi('Get the app taps',taps,Math.round(100*taps/w.visits)+'% of visits')}${kpi('Joined the list',w.joins,Math.round(100*w.joins/taps)+'% of taps')}${kpi('Most wanted',use[0],use[1]+' picks')}</div>
     <p class="sub">Note accounts: ${state.acct.count} parents added an email to keep their notes.</p>
@@ -1016,7 +1086,7 @@ function paintHero(){const v=view(),b=document.querySelector('#view .band');if(!
   const inl=!!b.querySelector('.band-side .panel,.band-side .fcard,.band-side form');b.classList.add(inl?'photo-in':'photo');b.style.setProperty('--hero','url("'+HERO[v]+'")');
   const host=inl?b.querySelector('.band-text'):null;if(host&&!host.querySelector('.hero-pic')){const im=document.createElement('img');im.className='hero-pic';im.alt='';im.src=HERO[v];host.appendChild(im);}}
 function loadHeroes(){Object.keys(HERO).forEach(k=>{const im=new Image();im.onload=()=>{heroOk[k]=true;paintHero();};im.src=HERO[k];});}
-const VIEWS={home,talk:talkView,track:trackView,urgent:urgentView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
+const VIEWS={home,timeline:timelineView,talk:talkView,track:trackView,urgent:urgentView,'find-care':findCare,'adhd-care':careModel,learn:learnView,'get-app':getApp,team:teamView,...(PARKED_ON?{family,'gp-referral':gpView,diagnostics:hub,clinic}:{})};
 function render(){
   const v=VIEWS[location.hash.slice(1)]?location.hash.slice(1):'home';
   document.querySelectorAll('.tabs a').forEach(a=>{if(a.getAttribute('href')==='#'+v){a.setAttribute('aria-current','page');const n=a.parentElement;if(n&&n.scrollWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-n.offsetLeft-(n.clientWidth-a.offsetWidth)/2;}else a.removeAttribute('aria-current');});
@@ -1089,6 +1159,10 @@ document.addEventListener('click',e=>{
   else if(a==='talk-info'){const n=state.talk.saved.find(x=>x.id===b.dataset.id),hits=n?infoFor(n.d.what):[];state.talk.log.forEach(m=>{delete m.next;});
     if(hits.length)talkSay('Here is general information from a trusted Australian source. It is not about your child, and your GP or a nurse can tell you more.',{info:hits.map(x=>x.id)});else talkSay('I do not have a trusted page on that yet. A nurse can talk it through with you on 1800 022 222.');}
   else if(a==='talk-learn'){const n=state.talk.saved.find(x=>x.id===b.dataset.id);state.learnOpen=talkTopic(n?n.d.what:'');state.playing=null;location.hash='learn';return;}
+  else if(a==='one-ex'){oneRoute(ONE_EX[+b.dataset.i][1]);render();oneShow();return;}
+  else if(a==='one-as'){oneRoute(state.one.said,b.dataset.k);render();oneShow();return;}
+  else if(a==='one-listen'){oneListen();return;}
+  else if(a==='tl-share'){const t=timelineText();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copied. Paste it into a message, or show it at the visit.'),()=>toast('Show this page at the visit.'));return;}
   else if(a==='acct-reset'){state.acct.on=false;}
   else if(a==='wait-reset'){state.wait.joined=false;}
   else if(a==='survey'){toast('The parent survey is not open yet. The link will sit here.');return;}
@@ -1151,6 +1225,7 @@ document.addEventListener('submit',e=>{
     U.sent=true;U.count++;toast('Request sent. This is a demo, so nothing was charged.');window.scrollTo(0,0);render();return;}
   if(e.target.dataset&&e.target.dataset.trk){const id=e.target.dataset.trk,d=TRK.find(x=>x[0]===id),v=parseFloat($('trk-'+id).value);if(!(v>0)||v>d[6]){toast('Type a number first');return;}trackLog(id,Math.round(v*10)/10);render();return;}
   if(e.target.id==='talk-form'){const v=$('talk-input').value;if(!v.trim()){toast('Type a few words first');return;}talkSend(v);render.focusTalk=true;render();return;}
+  if(e.target.id==='one-form'){oneRoute($('one-said').value);render();oneShow();return;}
   if(e.target.id==='acct-form'){const g=i=>$(i).value.trim();if(!g('ac-name')){toast('Add your first name');return;}if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g('ac-email'))){toast('Type your email first');return;}if(!g('ac-child')||!$('ac-age').value){toast('Add your child’s first name and age');return;}if(!$('ac-ok').checked){toast('Tick the box to agree first');return;}
     state.acct.on=true;state.acct.count++;toast('Done. Your notes are linked to your email.');render();return;}
   if(e.target.id==='wait-form'){const em=$('wait-email').value.trim(),w=state.wait;if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast('Type your email first');return;}
@@ -1331,7 +1406,7 @@ $('pip-open').addEventListener('click',()=>openPip(true));
 $('pip-close').addEventListener('click',()=>openPip(false));
 $('pip-stop').addEventListener('click',()=>pip.ctl&&pip.ctl.abort());
 $('pip-voice').addEventListener('click',e=>{pip.voice=!pip.voice;e.currentTarget.setAttribute('aria-pressed',String(pip.voice));e.currentTarget.textContent=pip.voice?'Voice on':'Read aloud';if(!pip.voice&&pip.tts)pip.tts.stop();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)openPip(false);if(e.key==='Enter'&&!e.shiftKey&&e.target.id==='q-said'){e.preventDefault();hear(e.target.value);render();toResults();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('pip').hidden)openPip(false);if(e.key==='Enter'&&!e.shiftKey&&e.target.id==='one-said'){e.preventDefault();oneRoute(e.target.value);render();oneShow();return;}if(e.key==='Enter'&&!e.shiftKey&&e.target.id==='q-said'){e.preventDefault();hear(e.target.value);render();toResults();}});
 (async()=>{
   if(!window.claude||!window.claude.use)return;
   try{const s=await window.claude.use('sample');if(s){const lim=await s.limits().catch(()=>null);if(lim&&lim.tools){pip.sample=s;pip.live=true;}}
@@ -1343,7 +1418,7 @@ document.addEventListener('toggle',e=>{const t=e.target;if(t.id==='f-more')state
 /* On a tablet or phone the header tucks away while scrolling down and returns on the way up. */
 let lastY=0;window.addEventListener('scroll',()=>{const y=window.scrollY,t=document.querySelector('.top');if(!t)return;if(window.innerWidth<=940&&y>lastY+6&&y>160)t.classList.add('tuck');else if(y<lastY-6||y<=160)t.classList.remove('tuck');lastY=y;},{passive:true});
 window.addEventListener('hashchange',()=>{const tp=document.querySelector('.top');if(tp)tp.classList.remove('tuck');presStop();state.pres.on=false;render();renderPip();window.scrollTo(0,0);});
-function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked&&saved.urgent&&saved.acct)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;render();renderPip();}
+function start(saved){if(saved&&saved.kids&&saved.kids.ivy&&saved.todo&&saved.stats&&saved.req&&saved.wait&&saved.talk&&saved.talk.asked&&saved.urgent&&saved.acct)state=saved;for(const k in SEED)if(state[k]===undefined)state[k]=JSON.parse(JSON.stringify(SEED[k]));state.q=Object.assign({},SEED.q,state.q,{listening:false});state.log=state.log||[];state.jdone=state.jdone||{};state.pres.on=false;state.one.listening=false;render();renderPip();}
 try{if('speechSynthesis' in window){speechSynthesis.getVoices();}}catch(e){}
 try{loadHeroes();}catch(e){}
 window.claude?.hot?.snapshot?.(()=>state);
